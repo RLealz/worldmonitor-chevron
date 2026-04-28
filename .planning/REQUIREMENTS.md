@@ -98,10 +98,10 @@
 | VER-02 | Phase 1 | Complete |
 | VER-03 | Phase 1 | Complete |
 | VER-05 | Phase 1 | Complete |
-| SUP-01 | Phase 2 | Pending |
-| SUP-02 | Phase 2 | Pending |
-| SUP-03 | Phase 2 | Pending |
-| SUP-04 | Phase 2 | Pending |
+| SUP-01 | Phase 2 | Complete |
+| SUP-02 | Phase 2 | Complete |
+| SUP-03 | Phase 2 | Complete |
+| SUP-04 | Phase 2 | Complete |
 | CMP-01 | Phase 3 | Pending |
 | CMP-02 | Phase 3 | Pending |
 | CMP-03 | Phase 3 | Pending |

@@ -2,21 +2,21 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: Phase 2 - Supplier Risk Signals
-status: ready_for_execution
-last_updated: "2026-04-28T21:15:00.000Z"
+current_phase: Phase 3 - Sanctions and Trade Exposure
+status: ready_for_planning
+last_updated: "2026-04-28T22:10:00.000Z"
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 3
+  completed_plans: 6
 ---
 
 # Project State: Chevron SCM Demo Dashboard
 
 **Initialized:** 2026-04-28  
-**Status:** Phase 2 planned; ready for Phase 2 execution
-**Current phase:** Phase 2 - Supplier Risk Signals
+**Status:** Phase 2 complete; ready for Phase 3 planning
+**Current phase:** Phase 3 - Sanctions and Trade Exposure
 
 ## Project Reference
 
@@ -26,15 +26,12 @@ See: `.planning/PROJECT.md` (updated 2026-04-28)
 
 ## Current Focus
 
-Build public-data supplier-risk signals now that the SCM demo shell is runnable and Phase 2 planning is complete. Phase 2 execution should keep using public country/product, route/chokepoint, sanctions, trade, material, and freshness signals without introducing customer-private supplier master data.
+Plan sanctions and trade exposure now that the SCM demo shell and supplier-risk signal layer are runnable. Phase 3 should keep compliance wording evidence-first and avoid final legal determinations.
 
 ## Completed Phases
 
 - Phase 1 - Public SCM Variant Shell completed on 2026-04-28.
-
-## Planned Phases
-
-- Phase 2 - Supplier Risk Signals planned on 2026-04-28.
+- Phase 2 - Supplier Risk Signals completed on 2026-04-28.
 
 ## Key Decisions
 
@@ -42,6 +39,7 @@ Build public-data supplier-risk signals now that the SCM demo shell is runnable 
 - Treat Chevron-specific wording as demo/framing only.
 - Build a focused `scm` or `chevron-scm` variant instead of forking the dashboard.
 - Reuse existing supply-chain, Route Explorer, sanctions, trade, maritime/chokepoint, energy disruption, critical minerals, pipeline, storage, fuel shortage, commodity, and energy-market surfaces first.
+- Supplier-risk records are synthetic archetypes or public-signal summaries, with every claim carrying source, timestamp, confidence, and reason.
 - Defer proprietary data ingestion, enterprise RBAC, audit logging, legal evidence retention, and production hardening.
 
 ## Planning Artifacts
@@ -57,7 +55,7 @@ Build public-data supplier-risk signals now that the SCM demo shell is runnable 
 
 ## Next Step
 
-Run `$gsd-execute-phase 2` to build the supplier-risk signal model, panel, and guardrails.
+Run `$gsd-plan-phase 3` to create executable sanctions and trade exposure plans.
 
 ---
 *State initialized: 2026-04-28*

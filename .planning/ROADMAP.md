@@ -11,7 +11,7 @@ The roadmap builds a safe public-data SCM demo in five phases. Phase 1 creates t
 ## Progress
 
 - [x] Phase 1 - Public SCM Variant Shell completed on 2026-04-28.
-- [ ] Phase 2 - Supplier Risk Signals
+- [x] Phase 2 - Supplier Risk Signals completed on 2026-04-28.
 - [ ] Phase 3 - Sanctions and Trade Exposure
 - [ ] Phase 4 - Route and Materials Deepening
 - [ ] Phase 5 - Demo Hardening and Safety Review
@@ -61,6 +61,14 @@ The roadmap builds a safe public-data SCM demo in five phases. Phase 1 creates t
 
 - Prefer a thin panel/card layer over new RPCs until public signal composition proves useful.
 - Consider reusing `src/utils/supplier-route-risk.ts` and existing `src/services/supply-chain/index.ts` methods.
+
+**Completed:** 2026-04-28
+
+**Delivered:**
+
+- Public supplier-risk model, synthetic archetypes, and evidence-first scoring.
+- SCM `supplier-risk` panel registered by default and refreshed from public chokepoint scores.
+- Tests for stable, sanctions-hit, route-disrupted, stale-data, and low-confidence scenarios.
 
 ## Phase 3: Sanctions and Trade Exposure
 
