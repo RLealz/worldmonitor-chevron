@@ -1,9 +1,12 @@
 import { Panel } from './Panel';
 import type { CountrySanctionsPressure, ProgramSanctionsPressure, SanctionsEntry, SanctionsPressureResult } from '@/services/sanctions-pressure';
+import type { ComplianceExposureSummary } from '@/types/compliance-exposure';
 import { escapeHtml } from '@/utils/sanitize';
+import { SITE_VARIANT } from '@/config';
 
 export class SanctionsPressurePanel extends Panel {
   private data: SanctionsPressureResult | null = null;
+  private scmComplianceContext: ComplianceExposureSummary[] = [];
 
   constructor() {
     super({
@@ -23,9 +26,15 @@ export class SanctionsPressurePanel extends Panel {
     this.render();
   }
 
+  public setScmComplianceContext(summaries: ComplianceExposureSummary[]): void {
+    this.scmComplianceContext = summaries;
+    this.render();
+  }
+
   private render(): void {
     if (!this.data || this.data.totalCount === 0) {
-      this.setContent('<div class="economic-empty">Sanctions data unavailable.</div>');
+      const scmNote = this.renderScmComplianceContext();
+      this.setContent(`${scmNote}<div class="economic-empty">Public sanctions pressure data unavailable.</div>`);
       return;
     }
 
@@ -59,6 +68,7 @@ export class SanctionsPressurePanel extends Panel {
 
     this.setContent(`
       <div class="sanctions-panel-content">
+        ${this.renderScmComplianceContext()}
         ${summaryHtml}
         <div class="sanctions-sections">
           <div class="sanctions-section">
@@ -77,6 +87,47 @@ export class SanctionsPressurePanel extends Panel {
         <div class="economic-footer">${escapeHtml(footer)}</div>
       </div>
     `);
+  }
+
+  private renderScmComplianceContext(): string {
+    if (SITE_VARIANT !== 'scm' && this.scmComplianceContext.length === 0) return '';
+
+    const relevant = this.scmComplianceContext
+      .filter(summary => summary.evidence.some(item => item.signal === 'sanctions_country' || item.signal === 'sanctions_entity_lookup'))
+      .slice(0, 3);
+
+    const rows = relevant.length
+      ? relevant.map(summary => {
+          const topEvidence = summary.evidence.find(item => item.signal === 'sanctions_country' || item.signal === 'sanctions_entity_lookup');
+          const chips = [
+            summary.exporterLabel,
+            summary.productLabel,
+            ...summary.materials.slice(0, 2),
+          ].map(label => `<span class="scm-compliance-chip">${escapeHtml(label)}</span>`).join('');
+          return `
+            <div class="scm-compliance-row">
+              <div>
+                <div class="scm-compliance-row-title">${escapeHtml(summary.supplierArchetypeLabel)}</div>
+                <div class="scm-compliance-row-meta">
+                  ${escapeHtml(summary.level)} exposure · confidence ${escapeHtml(summary.confidence)} · ${escapeHtml(topEvidence?.sourceList || topEvidence?.sourceName || topEvidence?.source || 'public source')}
+                  · ${escapeHtml(topEvidence?.dateLabel || 'public source date unavailable')}
+                </div>
+              </div>
+              <div class="scm-compliance-chips">${chips}</div>
+            </div>
+          `;
+        }).join('')
+      : '<div class="scm-compliance-empty">No sanctions screening exposure is currently matched to the public SCM archetypes.</div>';
+
+    return `
+      <div class="scm-compliance-note">
+        <div class="scm-compliance-note-title">Public SCM screening context</div>
+        <div class="scm-compliance-note-copy">
+          OFAC-derived public list pressure and optional public entity lookup evidence are screening signals for analyst review, not legal determinations.
+        </div>
+        <div class="scm-compliance-list">${rows}</div>
+      </div>
+    `;
   }
 
   private renderSummaryCard(label: string, value: string | number, tone = ''): string {

@@ -78,6 +78,7 @@ import {
   fetchChokepointStatus,
   fetchCriticalMinerals,
   fetchSanctionsPressure,
+  lookupSanctionEntity,
   fetchRadiationWatch,
 } from '@/services';
 import { getMarketWatchlistEntries } from '@/services/market-watchlist';
@@ -199,6 +200,13 @@ import { fetchSocialVelocity } from '@/services/social-velocity';
 import { fetchShippingStress } from '@/services/supply-chain';
 import { PUBLIC_SUPPLIER_RISK_ARCHETYPES } from '@/config/supplier-risk-archetypes';
 import { buildSupplierRiskSummaries } from '@/utils/supplier-risk-signals';
+import { buildComplianceExposureSummaries } from '@/utils/compliance-exposure';
+import type {
+  ComplianceExposureEntityLookupInput,
+  ComplianceExposureInputs,
+  ComplianceExposureTradeInputs,
+} from '@/types/compliance-exposure';
+import type { SanctionsPressureResult } from '@/services/sanctions-pressure';
 import { getTopActiveGeoHubs } from '@/services/geo-activity';
 import { getTopActiveHubs } from '@/services/tech-activity';
 import type { GeoHubsPanel } from '@/components/GeoHubsPanel';
@@ -290,6 +298,9 @@ export class DataLoaderManager implements AppModule {
   private dailyBriefFrameworkUnsubscribe: (() => void) | null = null;
   private marketImplicationsFrameworkUnsubscribe: (() => void) | null = null;
   private cachedSatRecs: SatRecEntry[] | null = null;
+  private latestScmSanctionsPressure: SanctionsPressureResult | null = null;
+  private latestScmTradeExposureInputs: ComplianceExposureTradeInputs = {};
+  private latestScmEntityLookups: ComplianceExposureEntityLookupInput[] = [];
 
   private digestBreaker = { state: 'closed' as 'closed' | 'open' | 'half-open', failures: 0, cooldownUntil: 0 };
   private readonly digestRequestTimeoutMs = 8000;
@@ -425,6 +436,65 @@ export class DataLoaderManager implements AppModule {
 
   private isAnyPanelNearViewport(panelIds: string[], marginPx = 400): boolean {
     return panelIds.some((panelId) => this.isPanelNearViewport(panelId, marginPx));
+  }
+
+  private countryIsoFromPublicLabel(value?: string): string | null {
+    if (!value) return null;
+    const normalized = value.trim().toLowerCase();
+    for (const archetype of PUBLIC_SUPPLIER_RISK_ARCHETYPES) {
+      if (normalized === archetype.exporterIso2.toLowerCase() || normalized === archetype.exporterLabel.toLowerCase()) {
+        return archetype.exporterIso2;
+      }
+      if (normalized === archetype.importerIso2.toLowerCase() || normalized === archetype.importerLabel.toLowerCase()) {
+        return archetype.importerIso2;
+      }
+    }
+    return null;
+  }
+
+  private getScmSanctionsCountryIso2s(): Set<string> {
+    const hits = new Set<string>();
+    for (const country of this.latestScmSanctionsPressure?.countries ?? []) {
+      const iso = this.countryIsoFromPublicLabel(country.countryCode) ?? this.countryIsoFromPublicLabel(country.countryName);
+      if (iso && country.entryCount > 0) hits.add(iso);
+    }
+    return hits;
+  }
+
+  private getScmTradeRestrictedCountryIso2s(): Set<string> {
+    const hits = new Set<string>();
+    for (const item of this.latestScmTradeExposureInputs.restrictions?.restrictions ?? []) {
+      const reporting = this.countryIsoFromPublicLabel(item.reportingCountry);
+      const affected = this.countryIsoFromPublicLabel(item.affectedCountry);
+      if (reporting && item.status !== 'low') hits.add(reporting);
+      if (affected && item.status !== 'low') hits.add(affected);
+    }
+    for (const item of this.latestScmTradeExposureInputs.barriers?.barriers ?? []) {
+      const notifying = this.countryIsoFromPublicLabel(item.notifyingCountry);
+      if (notifying) hits.add(notifying);
+    }
+    return hits;
+  }
+
+  private refreshScmComplianceExposureContext(): void {
+    if (SITE_VARIANT !== 'scm') return;
+
+    const inputs: ComplianceExposureInputs = {
+      now: new Date().toISOString(),
+      sanctionsPressure: this.latestScmSanctionsPressure
+        ? {
+            fetchedAt: this.latestScmSanctionsPressure.fetchedAt,
+            datasetDate: this.latestScmSanctionsPressure.datasetDate,
+            countries: this.latestScmSanctionsPressure.countries,
+            programs: this.latestScmSanctionsPressure.programs,
+          }
+        : undefined,
+      entityLookups: this.latestScmEntityLookups,
+      trade: this.latestScmTradeExposureInputs,
+    };
+    const summaries = buildComplianceExposureSummaries(PUBLIC_SUPPLIER_RISK_ARCHETYPES, inputs);
+    this.callPanel('sanctions-pressure', 'setScmComplianceContext', summaries);
+    this.callPanel('trade-policy', 'setScmComplianceContext', summaries);
   }
 
   async loadAllData(forceAll = false): Promise<void> {
@@ -2834,6 +2904,14 @@ export class DataLoaderManager implements AppModule {
       if (ba) tradePanel.updateBarriers(ba);
       if (rev) tradePanel.updateRevenue(rev);
       if (ct) tradePanel.updateComtradeFlows(ct);
+      this.latestScmTradeExposureInputs = {
+        restrictions: r ?? undefined,
+        tariffs: ta ?? undefined,
+        flows: fl ?? undefined,
+        barriers: ba ?? undefined,
+        comtrade: ct ?? undefined,
+      };
+      this.refreshScmComplianceExposureContext();
 
       const wtoItems = (r?.restrictions?.length ?? 0) + (ta?.datapoints?.length ?? 0) + (fl?.flows?.length ?? 0) + (ba?.barriers?.length ?? 0);
       const anyUnavailable = r?.upstreamUnavailable || ta?.upstreamUnavailable || fl?.upstreamUnavailable || ba?.upstreamUnavailable;
@@ -2907,6 +2985,8 @@ export class DataLoaderManager implements AppModule {
     const fetchedAt = chokepointData.fetchedAt || new Date().toISOString();
     const summaries = buildSupplierRiskSummaries(PUBLIC_SUPPLIER_RISK_ARCHETYPES, {
       chokepointScores: scores,
+      sanctionsCountryIso2s: this.getScmSanctionsCountryIso2s(),
+      tradeRestrictedCountryIso2s: this.getScmTradeRestrictedCountryIso2s(),
       materialRiskLabels: new Set(['crude oil', 'graphite', 'rare earths']),
       sourceTimestamps: {
         routeChokepoint: fetchedAt,
@@ -2929,6 +3009,8 @@ export class DataLoaderManager implements AppModule {
     } catch (error) {
       console.warn('[App] Supplier risk public signal refresh failed:', error);
       const summaries = buildSupplierRiskSummaries(PUBLIC_SUPPLIER_RISK_ARCHETYPES, {
+        sanctionsCountryIso2s: this.getScmSanctionsCountryIso2s(),
+        tradeRestrictedCountryIso2s: this.getScmTradeRestrictedCountryIso2s(),
         materialRiskLabels: new Set(['crude oil', 'graphite', 'rare earths']),
         now: new Date().toISOString(),
       });
@@ -3298,6 +3380,8 @@ export class DataLoaderManager implements AppModule {
     try {
       const result = await fetchSanctionsPressure();
       this.callPanel('sanctions-pressure', 'setData', result);
+      this.latestScmSanctionsPressure = result;
+      this.refreshScmComplianceExposureContext();
       this.ctx.intelligenceCache.sanctions = result;
       signalAggregator.ingestSanctionsPressure(result.countries);
       ingestSanctionsForCII(result.countries);
@@ -3313,6 +3397,20 @@ export class DataLoaderManager implements AppModule {
       dataFreshness.recordError('sanctions_pressure', String(error));
       this.ctx.statusPanel?.updateApi('OFAC', { status: 'error' });
     }
+  }
+
+  async lookupPublicSanctionsEntityForScm(query: string): Promise<void> {
+    if (SITE_VARIANT !== 'scm') return;
+    const trimmed = query.trim();
+    if (trimmed.length < 2) return;
+    const result = await lookupSanctionEntity(trimmed, 5);
+    this.latestScmEntityLookups = [{
+      query: trimmed,
+      source: result.source,
+      fetchedAt: new Date().toISOString(),
+      results: result.results,
+    }];
+    this.refreshScmComplianceExposureContext();
   }
 
   async loadResilienceRanking(): Promise<void> {

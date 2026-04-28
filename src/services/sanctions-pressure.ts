@@ -9,6 +9,7 @@ import {
   type CountrySanctionsPressure as ProtoCountryPressure,
   type ProgramSanctionsPressure as ProtoProgramPressure,
   type ListSanctionsPressureResponse,
+  type LookupSanctionEntityResponse,
 } from '@/generated/client/worldmonitor/sanctions/v1/service_client';
 
 export type SanctionsEntityType = 'entity' | 'individual' | 'vessel' | 'aircraft';
@@ -176,6 +177,15 @@ export async function fetchSanctionsPressure(): Promise<SanctionsPressureResult>
     return result;
   }, emptyResult, {
     shouldCache: (result) => result.totalCount > 0,
+  });
+}
+
+export async function lookupSanctionEntity(q: string, maxResults = 5): Promise<LookupSanctionEntityResponse> {
+  return client.lookupSanctionEntity({
+    q,
+    maxResults,
+  }, {
+    signal: AbortSignal.timeout(12_000),
   });
 }
 

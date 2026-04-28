@@ -13,6 +13,8 @@ import { t } from '@/services/i18n';
 import { escapeHtml } from '@/utils/sanitize';
 import { isFeatureAvailable } from '@/services/runtime-config';
 import { isDesktopRuntime } from '@/services/runtime';
+import { SITE_VARIANT } from '@/config';
+import type { ComplianceExposureSummary } from '@/types/compliance-exposure';
 
 type TabId = 'restrictions' | 'tariffs' | 'flows' | 'barriers' | 'revenue' | 'comtrade';
 
@@ -24,6 +26,7 @@ export class TradePolicyPanel extends Panel {
   private revenueData: GetCustomsRevenueResponse | null = null;
   private comtradeData: ListComtradeFlowsResponse | null = null;
   private activeTab: TabId = 'restrictions';
+  private scmComplianceContext: ComplianceExposureSummary[] = [];
 
   constructor() {
     super({ id: 'trade-policy', title: t('panels.tradePolicy'), defaultRowSpan: 2, infoTooltip: t('components.tradePolicy.infoTooltip') });
@@ -71,6 +74,11 @@ export class TradePolicyPanel extends Panel {
     this.render();
   }
 
+  public setScmComplianceContext(summaries: ComplianceExposureSummary[]): void {
+    this.scmComplianceContext = summaries;
+    this.render();
+  }
+
   private render(): void {
     const wtoAvailable = !isDesktopRuntime() || isFeatureAvailable('wtoTrade');
     const hasTariffs = wtoAvailable && this.tariffsData && this.tariffsData.datapoints?.length > 0;
@@ -80,7 +88,7 @@ export class TradePolicyPanel extends Panel {
     const hasComtrade = this.comtradeData && this.comtradeData.flows?.length > 0;
 
     if (!wtoAvailable && !hasRevenue && !hasComtrade) {
-      this.setContent(`<div class="economic-empty">${t('components.tradePolicy.apiKeyMissing')}</div>`);
+      this.setContent(`${this.renderScmComplianceContext()}<div class="economic-empty">${t('components.tradePolicy.apiKeyMissing')}</div>`);
       return;
     }
 
@@ -151,12 +159,65 @@ export class TradePolicyPanel extends Panel {
     this.setContent(`
       ${tabsHtml}
       ${unavailableBanner}
+      ${this.renderScmComplianceContext()}
       <div class="economic-content">${contentHtml}</div>
       <div class="economic-footer">
         <span class="economic-source">${escapeHtml(source)}</span>
       </div>
     `);
 
+  }
+
+  private renderScmComplianceContext(): string {
+    if (SITE_VARIANT !== 'scm' && this.scmComplianceContext.length === 0) return '';
+
+    const relevant = this.scmComplianceContext
+      .filter(summary => summary.evidence.some(item => (
+        item.signal === 'trade_restriction'
+        || item.signal === 'trade_barrier'
+        || item.signal === 'tariff'
+        || item.signal === 'trade_flow'
+      )))
+      .slice(0, 3);
+
+    const rows = relevant.length
+      ? relevant.map(summary => {
+          const topEvidence = summary.evidence.find(item => (
+            item.signal === 'trade_restriction'
+            || item.signal === 'trade_barrier'
+            || item.signal === 'tariff'
+            || item.signal === 'trade_flow'
+          ));
+          const chips = [
+            summary.exporterLabel,
+            summary.importerLabel,
+            summary.productLabel,
+          ].map(label => `<span class="scm-compliance-chip">${escapeHtml(label)}</span>`).join('');
+          return `
+            <div class="scm-compliance-row">
+              <div>
+                <div class="scm-compliance-row-title">${escapeHtml(summary.supplierArchetypeLabel)}</div>
+                <div class="scm-compliance-row-meta">
+                  ${escapeHtml(summary.level)} exposure · confidence ${escapeHtml(summary.confidence)}
+                  · ${escapeHtml(topEvidence?.sourceName || topEvidence?.source || 'public trade source')}
+                  · ${escapeHtml(topEvidence?.dateLabel || 'public source date unavailable')}
+                </div>
+              </div>
+              <div class="scm-compliance-chips">${chips}</div>
+            </div>
+          `;
+        }).join('')
+      : '<div class="scm-compliance-empty">No trade-control exposure is currently matched to the public SCM archetypes.</div>';
+
+    return `
+      <div class="scm-compliance-note">
+        <div class="scm-compliance-note-title">Public SCM trade-control context</div>
+        <div class="scm-compliance-note-copy">
+          Trade restrictions, barriers, tariffs, and flow anomalies are public screening signals for operational triage, not export-control legal conclusions.
+        </div>
+        <div class="scm-compliance-list">${rows}</div>
+      </div>
+    `;
   }
 
   private renderRestrictions(): string {
