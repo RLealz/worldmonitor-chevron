@@ -35,10 +35,10 @@
 
 ### Compliance
 
-- [ ] **CMP-01**: User can view sanctions and export-control exposure using public sanctions pressure, entity lookup, trade restrictions, tariffs, barriers, and trade-flow context.
-- [ ] **CMP-02**: User can see source/list/version/date provenance for sanctions and trade-control claims where available.
-- [ ] **CMP-03**: User is not shown compliance conclusions as final legal determinations; the UI frames them as public-data screening signals.
-- [ ] **CMP-04**: User can connect sanctions/trade exposure to supplier, route, country, and material context.
+- [x] **CMP-01**: User can view sanctions and export-control exposure using public sanctions pressure, entity lookup, trade restrictions, tariffs, barriers, and trade-flow context.
+- [x] **CMP-02**: User can see source/list/version/date provenance for sanctions and trade-control claims where available.
+- [x] **CMP-03**: User is not shown compliance conclusions as final legal determinations; the UI frames them as public-data screening signals.
+- [x] **CMP-04**: User can connect sanctions/trade exposure to supplier, route, country, and material context.
 
 ### Materials
 
@@ -102,10 +102,10 @@
 | SUP-02 | Phase 2 | Complete |
 | SUP-03 | Phase 2 | Complete |
 | SUP-04 | Phase 2 | Complete |
-| CMP-01 | Phase 3 | Pending |
-| CMP-02 | Phase 3 | Pending |
-| CMP-03 | Phase 3 | Pending |
-| CMP-04 | Phase 3 | Pending |
+| CMP-01 | Phase 3 | Complete |
+| CMP-02 | Phase 3 | Complete |
+| CMP-03 | Phase 3 | Complete |
+| CMP-04 | Phase 3 | Complete |
 | RTE-01 | Phase 4 | Pending |
 | RTE-02 | Phase 4 | Pending |
 | RTE-03 | Phase 4 | Pending |

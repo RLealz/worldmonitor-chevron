@@ -12,7 +12,7 @@ The roadmap builds a safe public-data SCM demo in five phases. Phase 1 creates t
 
 - [x] Phase 1 - Public SCM Variant Shell completed on 2026-04-28.
 - [x] Phase 2 - Supplier Risk Signals completed on 2026-04-28.
-- [ ] Phase 3 - Sanctions and Trade Exposure
+- [x] Phase 3 - Sanctions and Trade Exposure completed on 2026-04-28.
 - [ ] Phase 4 - Route and Materials Deepening
 - [ ] Phase 5 - Demo Hardening and Safety Review
 
@@ -87,6 +87,14 @@ The roadmap builds a safe public-data SCM demo in five phases. Phase 1 creates t
 
 - Reuse `SanctionsPressurePanel`, `TradePolicyPanel`, `server/worldmonitor/sanctions/v1/`, and `server/worldmonitor/trade/v1/`.
 - Avoid legal/compliance finality language.
+
+**Completed:** 2026-04-28
+
+**Delivered:**
+
+- Public compliance exposure model with evidence, provenance, confidence, and demo-safe entity lookup support.
+- SCM sanctions and trade panels enriched with public screening context tied to supplier archetype, country, product, material, and trade-flow signals.
+- Guardrails for legal-finality wording, private-data-shaped SCM language, SCM panel registration, and provenance preservation.
 
 ## Phase 4: Route and Materials Deepening
 

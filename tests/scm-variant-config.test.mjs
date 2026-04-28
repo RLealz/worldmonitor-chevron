@@ -10,6 +10,8 @@ const variantMetaSource = readFileSync(new URL('variant-meta.ts', CONFIG_SRC), '
 const panelsSource = readFileSync(new URL('panels.ts', CONFIG_SRC), 'utf8');
 const energyRiskOverviewSource = readFileSync(new URL('EnergyRiskOverviewPanel.ts', COMPONENTS_SRC), 'utf8');
 const supplyChainPanelSource = readFileSync(new URL('SupplyChainPanel.ts', COMPONENTS_SRC), 'utf8');
+const sanctionsPressurePanelSource = readFileSync(new URL('SanctionsPressurePanel.ts', COMPONENTS_SRC), 'utf8');
+const tradePolicyPanelSource = readFileSync(new URL('TradePolicyPanel.ts', COMPONENTS_SRC), 'utf8');
 
 function extractConstObjectBody(source, constName) {
   const marker = `const ${constName}`;
@@ -142,6 +144,8 @@ describe('SCM variant config guardrails', () => {
     for (const panelId of requiredPanels) {
       assert.ok(scmPanelKeys.has(panelId), `SCM defaults missing panel "${panelId}"`);
     }
+    assert.match(panelsSource, /'trade-policy': \{ name: 'Trade-Control Screening'/);
+    assert.match(panelsSource, /'sanctions-pressure': \{ name: 'Sanctions Screening Signals'/);
 
     assert.match(
       panelsSource,
@@ -226,6 +230,16 @@ describe('SCM variant config guardrails', () => {
       /SCM demo note: closure scenarios are demo-only assumptions derived from public routing and chokepoint data\./,
       'Supply chain scenario framing must stay demo-only',
     );
+    assert.match(
+      sanctionsPressurePanelSource,
+      /public list pressure and optional public entity lookup evidence are screening signals for analyst review/,
+      'Sanctions pressure panel must frame SCM context as public screening evidence',
+    );
+    assert.match(
+      tradePolicyPanelSource,
+      /Trade restrictions, barriers, tariffs, and flow anomalies are public screening signals for operational triage/,
+      'Trade policy panel must frame SCM context as public screening evidence',
+    );
   });
 
   it('does not introduce Chevron-private or proprietary fixture language into SCM files', () => {
@@ -235,6 +249,8 @@ describe('SCM variant config guardrails', () => {
       panelsSource,
       energyRiskOverviewSource,
       supplyChainPanelSource,
+      sanctionsPressurePanelSource,
+      tradePolicyPanelSource,
     ].join('\n');
 
     const bannedPhrases = [

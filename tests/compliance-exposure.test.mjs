@@ -34,6 +34,26 @@ function textOf(value) {
   return JSON.stringify(value).toLowerCase();
 }
 
+function finalityPattern() {
+  return new RegExp([
+    `${'clear'}ed`,
+    `${'approv'}ed`,
+    `${'compl'}iant`,
+    `${'viol'}ation`,
+    `${'final'} ${'legal'}`,
+  ].join('|'), 'i');
+}
+
+function restrictedPattern() {
+  return new RegExp([
+    `${'clear'}ed`,
+    `${'approv'}ed`,
+    `${'compl'}iant`,
+    `${'prohibit'}ed`,
+    `${'viol'}ation`,
+  ].join('|'), 'i');
+}
+
 describe('public compliance exposure model', () => {
   it('raises exposure for a public sanctions country signal with provenance', () => {
     const summary = buildComplianceExposureSummary(archetype('east-asia-battery-materials-archetype'), {
@@ -139,7 +159,7 @@ describe('public compliance exposure model', () => {
     assert.ok(summaries[0].score >= summaries[1].score);
     assert.ok(summaries[0].evidence.some(item => item.signal === 'tariff'));
     assert.ok(summaries[0].evidence.some(item => item.signal === 'trade_flow'));
-    assert.doesNotMatch(textOf(summaries), /cleared|approved|compliant|violation|final legal/);
+    assert.doesNotMatch(textOf(summaries), finalityPattern());
   });
 
   it('penalizes stale or missing public provenance instead of implying certainty', () => {
@@ -171,16 +191,21 @@ describe('public compliance exposure model', () => {
     assert.equal(summary.level, 'low');
     assert.equal(summary.dataPosture, 'public_screening_signal');
     assert.ok(summary.reasons.some(reason => reason.includes('No current public sanctions or trade-control screening signal')));
-    assert.doesNotMatch(textOf(summary), /cleared|approved|compliant|prohibited|violation/);
+    assert.doesNotMatch(textOf(summary), restrictedPattern());
     assertEvidenceShape(summary);
   });
 });
 
 describe('compliance exposure demo-safety guardrails', () => {
-  it('does not introduce private SCM or legal-finality wording in new files', () => {
+  it('does not introduce private SCM or legal-finality wording in touched compliance files', () => {
     const sources = [
       '../src/types/compliance-exposure.ts',
       '../src/utils/compliance-exposure.ts',
+      '../src/components/SanctionsPressurePanel.ts',
+      '../src/components/TradePolicyPanel.ts',
+      '../src/app/data-loader.ts',
+      '../src/config/panels.ts',
+      '../src/config/variants/scm.ts',
       '../tests/compliance-exposure.test.mjs',
     ];
     const text = sources
@@ -196,10 +221,25 @@ describe('compliance exposure demo-safety guardrails', () => {
       new RegExp(`${'site'}-${'sensitive'}`, 'i'),
       new RegExp(`${'legally'} ${'prohibited'}`, 'i'),
       new RegExp(`${'final'} ${'determination'}`, 'i'),
+      new RegExp(`\\b${'clear'}ed\\b`, 'i'),
+      new RegExp(`\\b${'approv'}ed\\b`, 'i'),
+      new RegExp(`\\b${'compl'}iant\\b`, 'i'),
+      new RegExp(`\\b${'viol'}ation\\b`, 'i'),
     ];
 
     for (const pattern of banned) {
       assert.doesNotMatch(text, pattern, `banned wording ${pattern}`);
     }
+  });
+
+  it('keeps touched UI copy in public screening posture', () => {
+    const sanctionsPanel = readFileSync(new URL('../src/components/SanctionsPressurePanel.ts', import.meta.url), 'utf8');
+    const tradePanel = readFileSync(new URL('../src/components/TradePolicyPanel.ts', import.meta.url), 'utf8');
+    const dataLoader = readFileSync(new URL('../src/app/data-loader.ts', import.meta.url), 'utf8');
+
+    assert.match(sanctionsPanel, /public list pressure and optional public entity lookup evidence are screening signals/i);
+    assert.match(tradePanel, /public screening signals for operational triage/i);
+    assert.match(dataLoader, /lookupPublicSanctionsEntityForScm/);
+    assert.doesNotMatch(`${sanctionsPanel}\n${tradePanel}`, new RegExp(`${'final'} ${'legal'}`, 'i'));
   });
 });

@@ -2,21 +2,21 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: Phase 3 - Sanctions and Trade Exposure
-status: ready_for_execution
-last_updated: "2026-04-28T22:35:00.000Z"
+current_phase: Phase 4 - Route and Materials Deepening
+status: ready_for_planning
+last_updated: "2026-04-28T23:20:00.000Z"
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 9
-  completed_plans: 6
+  completed_plans: 9
 ---
 
 # Project State: Chevron SCM Demo Dashboard
 
 **Initialized:** 2026-04-28  
-**Status:** Phase 3 planned; ready for Phase 3 execution
-**Current phase:** Phase 3 - Sanctions and Trade Exposure
+**Status:** Phase 3 complete; ready for Phase 4 planning
+**Current phase:** Phase 4 - Route and Materials Deepening
 
 ## Project Reference
 
@@ -26,12 +26,13 @@ See: `.planning/PROJECT.md` (updated 2026-04-28)
 
 ## Current Focus
 
-Execute sanctions and trade exposure now that the SCM demo shell, supplier-risk signal layer, and Phase 3 implementation plans are ready. Phase 3 should keep compliance wording evidence-first and avoid final legal determinations.
+Plan route and materials deepening now that the SCM demo shell, supplier-risk signal layer, and evidence-first sanctions/trade exposure layer are runnable.
 
 ## Completed Phases
 
 - Phase 1 - Public SCM Variant Shell completed on 2026-04-28.
 - Phase 2 - Supplier Risk Signals completed on 2026-04-28.
+- Phase 3 - Sanctions and Trade Exposure completed on 2026-04-28.
 
 ## Key Decisions
 
@@ -40,6 +41,7 @@ Execute sanctions and trade exposure now that the SCM demo shell, supplier-risk 
 - Build a focused `scm` or `chevron-scm` variant instead of forking the dashboard.
 - Reuse existing supply-chain, Route Explorer, sanctions, trade, maritime/chokepoint, energy disruption, critical minerals, pipeline, storage, fuel shortage, commodity, and energy-market surfaces first.
 - Supplier-risk records are synthetic archetypes or public-signal summaries, with every claim carrying source, timestamp, confidence, and reason.
+- Sanctions/trade exposure is framed as public screening context with source/list/date provenance and no final legal determinations.
 - Defer proprietary data ingestion, enterprise RBAC, audit logging, legal evidence retention, and production hardening.
 
 ## Planning Artifacts
@@ -56,7 +58,7 @@ Execute sanctions and trade exposure now that the SCM demo shell, supplier-risk 
 
 ## Next Step
 
-Run `$gsd-execute-phase 3` to implement the sanctions and trade exposure plans.
+Run `$gsd-plan-phase 4` to plan route and materials deepening.
 
 ---
 *State initialized: 2026-04-28*
