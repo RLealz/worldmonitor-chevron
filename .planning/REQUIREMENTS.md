@@ -86,18 +86,18 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| VAR-01 | Phase 1 | Pending |
-| VAR-02 | Phase 1 | Pending |
-| VAR-03 | Phase 1 | Pending |
-| VAR-04 | Phase 1 | Pending |
-| FRM-01 | Phase 1 | Pending |
-| FRM-02 | Phase 1 | Pending |
-| FRM-03 | Phase 1 | Pending |
-| FRM-04 | Phase 1 | Pending |
-| VER-01 | Phase 1 | Pending |
-| VER-02 | Phase 1 | Pending |
-| VER-03 | Phase 1 | Pending |
-| VER-05 | Phase 1 | Pending |
+| VAR-01 | Phase 1 | Complete |
+| VAR-02 | Phase 1 | Complete |
+| VAR-03 | Phase 1 | Complete |
+| VAR-04 | Phase 1 | Complete |
+| FRM-01 | Phase 1 | Complete |
+| FRM-02 | Phase 1 | Complete |
+| FRM-03 | Phase 1 | Complete |
+| FRM-04 | Phase 1 | Complete |
+| VER-01 | Phase 1 | Complete |
+| VER-02 | Phase 1 | Complete |
+| VER-03 | Phase 1 | Complete |
+| VER-05 | Phase 1 | Complete |
 | SUP-01 | Phase 2 | Pending |
 | SUP-02 | Phase 2 | Pending |
 | SUP-03 | Phase 2 | Pending |

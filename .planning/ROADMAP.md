@@ -8,6 +8,14 @@
 
 The roadmap builds a safe public-data SCM demo in five phases. Phase 1 creates the focused variant shell and proves the existing dashboard can load as an SCM workspace. Later phases deepen supplier risk, compliance, route/material workflows, and final demo guardrails without introducing proprietary Chevron data.
 
+## Progress
+
+- [x] Phase 1 - Public SCM Variant Shell completed on 2026-04-28.
+- [ ] Phase 2 - Supplier Risk Signals
+- [ ] Phase 3 - Sanctions and Trade Exposure
+- [ ] Phase 4 - Route and Materials Deepening
+- [ ] Phase 5 - Demo Hardening and Safety Review
+
 | # | Phase | Goal | Requirements | Success Criteria |
 |---|-------|------|--------------|------------------|
 | 1 | Public SCM Variant Shell | Create a runnable SCM demo variant using existing panels, map layers, and public-data framing | VAR-01, VAR-02, VAR-03, VAR-04, FRM-01, FRM-02, FRM-03, FRM-04, VER-01, VER-02, VER-03, VER-05 | 5 |
