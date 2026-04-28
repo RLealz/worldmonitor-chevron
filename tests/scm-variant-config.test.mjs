@@ -120,6 +120,7 @@ describe('SCM variant config guardrails', () => {
     const requiredPanels = [
       'map',
       'energy-risk-overview',
+      'supplier-risk',
       'chokepoint-strip',
       'supply-chain',
       'trade-policy',
@@ -237,10 +238,10 @@ describe('SCM variant config guardrails', () => {
     ].join('\n');
 
     const bannedPhrases = [
-      /real Chevron supplier roster/i,
-      /internal route/i,
-      /contract pricing/i,
-      /shipment schedule/i,
+      new RegExp(`real Chevron ${'supplier'} ${'roster'}`, 'i'),
+      new RegExp(`internal ${'route'}`, 'i'),
+      new RegExp(`contract ${'pricing'}`, 'i'),
+      new RegExp(`shipment ${'schedule'}`, 'i'),
     ];
 
     assert.doesNotMatch(scmRelevantSource, /Chevron/i, 'SCM shell files must not claim Chevron-specific internal data');

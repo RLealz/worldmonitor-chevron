@@ -159,12 +159,12 @@ describe('supplier risk demo-safety guardrails', () => {
       .map(path => readFileSync(new URL(path, import.meta.url), 'utf8'))
       .join('\n');
     const banned = [
-      /real Chevron supplier/i,
-      /internal route/i,
-      /contract pricing/i,
-      /shipment schedule/i,
-      /supplier roster/i,
-      /operational secret/i,
+      new RegExp(`real Chevron ${'supplier'}`, 'i'),
+      new RegExp(`internal ${'route'}`, 'i'),
+      new RegExp(`contract ${'pricing'}`, 'i'),
+      new RegExp(`shipment ${'schedule'}`, 'i'),
+      new RegExp(`supplier ${'roster'}`, 'i'),
+      new RegExp(`operational ${'secret'}`, 'i'),
     ];
 
     for (const pattern of banned) {

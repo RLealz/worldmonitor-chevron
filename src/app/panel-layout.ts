@@ -49,6 +49,7 @@ import {
   InvestmentsPanel,
   TradePolicyPanel,
   SupplyChainPanel,
+  SupplierRiskPanel,
   SanctionsPressurePanel,
   GulfEconomiesPanel,
   GroceryBasketPanel,
@@ -936,6 +937,7 @@ export class PanelLayoutManager implements AppModule {
 
     this.createPanel('trade-policy', () => new TradePolicyPanel());
     this.createPanel('sanctions-pressure', () => new SanctionsPressurePanel());
+    this.createPanel('supplier-risk', () => new SupplierRiskPanel());
     const supplyChainPanel = this.createPanel('supply-chain', () => new SupplyChainPanel());
     if (supplyChainPanel) {
       supplyChainPanel.setOnScenarioActivate((id, result) => {

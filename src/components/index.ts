@@ -51,6 +51,7 @@ export * from './InvestmentsPanel';
 export * from './UnifiedSettings';
 export * from './TradePolicyPanel';
 export * from './SupplyChainPanel';
+export * from './SupplierRiskPanel';
 export * from './SecurityAdvisoriesPanel';
 export * from './SanctionsPressurePanel';
 export * from './DefensePatentsPanel';

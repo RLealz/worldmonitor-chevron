@@ -77,4 +77,3 @@ export interface SupplierRiskSummary {
   staleSignals: string[];
   generatedAt: string;
 }
-

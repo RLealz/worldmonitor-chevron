@@ -1091,6 +1091,7 @@ const ENERGY_MOBILE_MAP_LAYERS: MapLayers = {
 const SCM_PANELS: Record<string, PanelConfig> = {
   map: { name: 'Public SCM Demo Map', enabled: true, priority: 1 },
   'energy-risk-overview': { name: 'Public Energy Supply Risk Overview', enabled: true, priority: 1 },
+  'supplier-risk': { name: 'Supplier Risk Signals', enabled: true, priority: 1 },
   'chokepoint-strip': { name: 'Chokepoint Status', enabled: true, priority: 1 },
   'supply-chain': { name: 'Supply Chain & Chokepoints', enabled: true, priority: 1 },
   'trade-policy': { name: 'Trade Policy & Controls', enabled: true, priority: 1 },
@@ -1279,6 +1280,7 @@ export const VARIANT_PANEL_OVERRIDES: Partial<Record<string, Partial<Record<stri
   scm: {
     map:                 { name: 'Public SCM Demo Map' },
     'live-news':         { name: 'Supply Chain & Energy Headlines' },
+    'supplier-risk':     { name: 'Supplier Risk Signals' },
     'supply-chain':      { name: 'Supply Chain & Chokepoints' },
     'trade-policy':      { name: 'Trade Policy & Controls' },
     'sanctions-pressure': { name: 'Sanctions Pressure' },

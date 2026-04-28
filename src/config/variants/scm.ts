@@ -9,6 +9,7 @@ export * from './base';
 export const DEFAULT_PANELS: Record<string, PanelConfig> = {
   map: { name: 'Public SCM Demo Map', enabled: true, priority: 1 },
   'energy-risk-overview': { name: 'Public Energy Supply Risk Overview', enabled: true, priority: 1 },
+  'supplier-risk': { name: 'Supplier Risk Signals', enabled: true, priority: 1 },
   'chokepoint-strip': { name: 'Chokepoint Status', enabled: true, priority: 1 },
   'supply-chain': { name: 'Supply Chain & Chokepoints', enabled: true, priority: 1 },
   'trade-policy': { name: 'Trade Policy & Controls', enabled: true, priority: 1 },

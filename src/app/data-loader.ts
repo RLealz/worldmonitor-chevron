@@ -158,6 +158,7 @@ import {
   UcdpEventsPanel,
   TradePolicyPanel,
   SupplyChainPanel,
+  SupplierRiskPanel,
   DiseaseOutbreaksPanel,
   SocialVelocityPanel,
   WsbTickerScannerPanel,
@@ -196,6 +197,8 @@ import { fetchMarketImplications } from '@/services/market-implications';
 import { fetchDiseaseOutbreaks } from '@/services/disease-outbreaks';
 import { fetchSocialVelocity } from '@/services/social-velocity';
 import { fetchShippingStress } from '@/services/supply-chain';
+import { PUBLIC_SUPPLIER_RISK_ARCHETYPES } from '@/config/supplier-risk-archetypes';
+import { buildSupplierRiskSummaries } from '@/utils/supplier-risk-signals';
 import { getTopActiveGeoHubs } from '@/services/geo-activity';
 import { getTopActiveHubs } from '@/services/tech-activity';
 import type { GeoHubsPanel } from '@/components/GeoHubsPanel';
@@ -483,6 +486,9 @@ export class DataLoaderManager implements AppModule {
         }
         if (shouldLoad('supply-chain')) {
           tasks.push({ name: 'supplyChain', task: runGuarded('supplyChain', () => this.loadSupplyChain()) });
+        }
+        if (shouldLoad('supplier-risk')) {
+          tasks.push({ name: 'supplierRisk', task: runGuarded('supplierRisk', () => this.loadSupplierRisk()) });
         }
       }
     }
@@ -2870,6 +2876,7 @@ export class DataLoaderManager implements AppModule {
       if (shippingData) scPanel.updateShippingRates(shippingData);
       if (chokepointData) scPanel.updateChokepointStatus(chokepointData);
       if (chokepointData) this.ctx.map?.setChokepointData(chokepointData);
+      if (chokepointData) this.updateSupplierRiskFromChokepoints(chokepointData);
       if (mineralsData) scPanel.updateCriticalMinerals(mineralsData);
       if (stressData) scPanel.updateShippingStress(stressData);
 
@@ -2888,6 +2895,44 @@ export class DataLoaderManager implements AppModule {
       this.callPanel('supply-chain', 'showError', undefined, () => void this.loadSupplyChain());
       this.ctx.statusPanel?.updateApi('SupplyChain', { status: 'error' });
       dataFreshness.recordError('supply_chain', String(e));
+    }
+  }
+
+  private updateSupplierRiskFromChokepoints(
+    chokepointData: Awaited<ReturnType<typeof fetchChokepointStatus>>,
+  ): void {
+    const scores = new Map(
+      chokepointData.chokepoints.map(cp => [cp.id, cp.disruptionScore] as const),
+    );
+    const fetchedAt = chokepointData.fetchedAt || new Date().toISOString();
+    const summaries = buildSupplierRiskSummaries(PUBLIC_SUPPLIER_RISK_ARCHETYPES, {
+      chokepointScores: scores,
+      materialRiskLabels: new Set(['crude oil', 'graphite', 'rare earths']),
+      sourceTimestamps: {
+        routeChokepoint: fetchedAt,
+        countryProduct: fetchedAt,
+        sanctionsTrade: fetchedAt,
+        materials: fetchedAt,
+      },
+      now: new Date().toISOString(),
+    });
+    this.callPanel('supplier-risk', 'updateSupplierRiskSummaries', summaries);
+  }
+
+  async loadSupplierRisk(): Promise<void> {
+    const panel = this.ctx.panels['supplier-risk'] as SupplierRiskPanel | undefined;
+    if (!panel) return;
+
+    try {
+      const chokepointData = await fetchChokepointStatus();
+      this.updateSupplierRiskFromChokepoints(chokepointData);
+    } catch (error) {
+      console.warn('[App] Supplier risk public signal refresh failed:', error);
+      const summaries = buildSupplierRiskSummaries(PUBLIC_SUPPLIER_RISK_ARCHETYPES, {
+        materialRiskLabels: new Set(['crude oil', 'graphite', 'rare earths']),
+        now: new Date().toISOString(),
+      });
+      panel.updateSupplierRiskSummaries(summaries);
     }
   }
 

@@ -243,4 +243,3 @@ export function buildSupplierRiskSummaries(
     .map(archetype => buildSupplierRiskSummary(archetype, inputs))
     .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label));
 }
-
