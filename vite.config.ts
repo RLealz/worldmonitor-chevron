@@ -39,6 +39,8 @@ function brotliPrecompressPlugin(): Plugin {
 }
 
 function htmlVariantPlugin(activeMeta: VariantMeta, activeVariant: string, isDesktopBuild: boolean): Plugin {
+  const faviconVariant = activeVariant === 'scm' ? 'energy' : activeVariant;
+
   return {
     name: 'html-variant',
     transformIndexHtml(html) {
@@ -99,10 +101,10 @@ function htmlVariantPlugin(activeMeta: VariantMeta, activeVariant: string, isDes
       // Web builds use 'full' favicons in HTML; runtime JS swaps them per hostname.
       if (activeVariant !== 'full') {
         result = result
-          .replace(/\/favico\/favicon/g, `/favico/${activeVariant}/favicon`)
-          .replace(/\/favico\/apple-touch-icon/g, `/favico/${activeVariant}/apple-touch-icon`)
-          .replace(/\/favico\/android-chrome/g, `/favico/${activeVariant}/android-chrome`)
-          .replace(/\/favico\/og-image/g, `/favico/${activeVariant}/og-image`);
+          .replace(/\/favico\/favicon/g, `/favico/${faviconVariant}/favicon`)
+          .replace(/\/favico\/apple-touch-icon/g, `/favico/${faviconVariant}/apple-touch-icon`)
+          .replace(/\/favico\/android-chrome/g, `/favico/${faviconVariant}/android-chrome`)
+          .replace(/\/favico\/og-image/g, `/favico/${faviconVariant}/og-image`);
       }
 
       return result;

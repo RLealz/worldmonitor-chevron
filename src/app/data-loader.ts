@@ -476,8 +476,8 @@ export class DataLoaderManager implements AppModule {
         tasks.push({ name: 'oil', task: runGuarded('oil', () => this.loadOilAnalytics()) });
       }
 
-      // Trade policy + supply-chain data (FULL, FINANCE, COMMODITY, ENERGY variants use supply-chain surface)
-      if (SITE_VARIANT === 'full' || SITE_VARIANT === 'finance' || SITE_VARIANT === 'commodity' || SITE_VARIANT === 'energy') {
+      // Trade policy + supply-chain data (public-data variants that surface SCM context)
+      if (SITE_VARIANT === 'full' || SITE_VARIANT === 'finance' || SITE_VARIANT === 'commodity' || SITE_VARIANT === 'energy' || SITE_VARIANT === 'scm') {
         if (shouldLoad('trade-policy')) {
           tasks.push({ name: 'tradePolicy', task: runGuarded('tradePolicy', () => this.loadTradePolicy()) });
         }

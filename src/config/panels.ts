@@ -1085,6 +1085,147 @@ const ENERGY_MOBILE_MAP_LAYERS: MapLayers = {
 };
 
 // ============================================
+// SCM variant — public-data supply-chain monitoring shell
+// Reuses existing public panels/layers only; no proprietary operator claims.
+// ============================================
+const SCM_PANELS: Record<string, PanelConfig> = {
+  map: { name: 'Public SCM Demo Map', enabled: true, priority: 1 },
+  'energy-risk-overview': { name: 'Public Energy Supply Risk Overview', enabled: true, priority: 1 },
+  'chokepoint-strip': { name: 'Chokepoint Status', enabled: true, priority: 1 },
+  'supply-chain': { name: 'Supply Chain & Chokepoints', enabled: true, priority: 1 },
+  'trade-policy': { name: 'Trade Policy & Controls', enabled: true, priority: 1 },
+  'sanctions-pressure': { name: 'Sanctions Pressure', enabled: true, priority: 1 },
+  'pipeline-status': { name: 'Pipeline Status', enabled: true, priority: 1 },
+  'storage-facility-map': { name: 'Storage Facilities', enabled: true, priority: 1 },
+  'fuel-shortages': { name: 'Fuel Shortages', enabled: true, priority: 1 },
+  'energy-disruptions': { name: 'Energy Disruptions', enabled: true, priority: 1 },
+  'live-news': { name: 'Supply Chain & Energy Headlines', enabled: true, priority: 1 },
+  'energy-complex': { name: 'Energy Complex', enabled: true, priority: 1 },
+  'oil-inventories': { name: 'Oil & Gas Inventories', enabled: true, priority: 1 },
+  'hormuz-tracker': { name: 'Strait of Hormuz Tracker', enabled: true, priority: 1 },
+  commodities: { name: 'Energy & Materials Benchmarks', enabled: true, priority: 1 },
+  'fuel-prices': { name: 'Fuel Prices', enabled: true, priority: 2 },
+  'macro-signals': { name: 'Macro Signals', enabled: true, priority: 2 },
+  monitors: { name: 'My Monitors', enabled: true, priority: 3 },
+};
+
+const SCM_MAP_LAYERS: MapLayers = {
+  gpsJamming: false,
+  satellites: false,
+  conflicts: false,
+  bases: false,
+  cables: false,
+  pipelines: true,
+  hotspots: false,
+  ais: true,
+  nuclear: false,
+  irradiators: false,
+  sanctions: true,
+  weather: true,
+  economic: false,
+  waterways: true,
+  outages: true,
+  cyberThreats: false,
+  datacenters: false,
+  protests: false,
+  flights: false,
+  military: false,
+  natural: true,
+  spaceports: false,
+  minerals: true,
+  fires: true,
+  ucdpEvents: false,
+  displacement: false,
+  climate: false,
+  startupHubs: false,
+  cloudRegions: false,
+  accelerators: false,
+  techHQs: false,
+  techEvents: false,
+  stockExchanges: false,
+  financialCenters: false,
+  centralBanks: false,
+  commodityHubs: true,
+  gulfInvestments: false,
+  positiveEvents: false,
+  kindness: false,
+  happiness: false,
+  speciesRecovery: false,
+  renewableInstallations: false,
+  tradeRoutes: true,
+  iranAttacks: false,
+  ciiChoropleth: false,
+  resilienceScore: false,
+  dayNight: false,
+  miningSites: false,
+  processingPlants: false,
+  commodityPorts: true,
+  webcams: false,
+  diseaseOutbreaks: false,
+  storageFacilities: true,
+  fuelShortages: true,
+  liveTankers: true,
+};
+
+const SCM_MOBILE_MAP_LAYERS: MapLayers = {
+  gpsJamming: false,
+  satellites: false,
+  conflicts: false,
+  bases: false,
+  cables: false,
+  pipelines: true,
+  hotspots: false,
+  ais: false,
+  nuclear: false,
+  irradiators: false,
+  sanctions: true,
+  weather: false,
+  economic: false,
+  waterways: true,
+  outages: true,
+  cyberThreats: false,
+  datacenters: false,
+  protests: false,
+  flights: false,
+  military: false,
+  natural: true,
+  spaceports: false,
+  minerals: false,
+  fires: false,
+  ucdpEvents: false,
+  displacement: false,
+  climate: false,
+  startupHubs: false,
+  cloudRegions: false,
+  accelerators: false,
+  techHQs: false,
+  techEvents: false,
+  stockExchanges: false,
+  financialCenters: false,
+  centralBanks: false,
+  commodityHubs: false,
+  gulfInvestments: false,
+  positiveEvents: false,
+  kindness: false,
+  happiness: false,
+  speciesRecovery: false,
+  renewableInstallations: false,
+  tradeRoutes: false,
+  iranAttacks: false,
+  ciiChoropleth: false,
+  resilienceScore: false,
+  dayNight: false,
+  miningSites: false,
+  processingPlants: false,
+  commodityPorts: true,
+  webcams: false,
+  diseaseOutbreaks: false,
+  storageFacilities: true,
+  fuelShortages: true,
+  liveTankers: false,
+};
+
+// ============================================
 // UNIFIED PANEL REGISTRY
 // ============================================
 
@@ -1093,6 +1234,7 @@ export const ALL_PANELS: Record<string, PanelConfig> = {
   ...HAPPY_PANELS,
   ...COMMODITY_PANELS,
   ...ENERGY_PANELS,
+  ...SCM_PANELS,
   ...TECH_PANELS,
   ...FINANCE_PANELS,
   ...FULL_PANELS,
@@ -1105,6 +1247,7 @@ export const VARIANT_DEFAULTS: Record<string, string[]> = {
   finance:   Object.keys(FINANCE_PANELS),
   commodity: Object.keys(COMMODITY_PANELS),
   energy:    Object.keys(ENERGY_PANELS),
+  scm:       Object.keys(SCM_PANELS),
   happy:     Object.keys(HAPPY_PANELS),
 };
 
@@ -1132,6 +1275,15 @@ export const VARIANT_PANEL_OVERRIDES: Partial<Record<string, Partial<Record<stri
     map:         { name: 'Energy Atlas Map' },
     'live-news': { name: 'Energy Headlines' },
     insights:    { name: 'AI Energy Insights' },
+  },
+  scm: {
+    map:                 { name: 'Public SCM Demo Map' },
+    'live-news':         { name: 'Supply Chain & Energy Headlines' },
+    'supply-chain':      { name: 'Supply Chain & Chokepoints' },
+    'trade-policy':      { name: 'Trade Policy & Controls' },
+    'sanctions-pressure': { name: 'Sanctions Pressure' },
+    commodities:         { name: 'Energy & Materials Benchmarks' },
+    'macro-signals':     { name: 'Macro Signals' },
   },
   happy: {
     map:         { name: 'World Map' },
@@ -1189,7 +1341,9 @@ export const DEFAULT_MAP_LAYERS = SITE_VARIANT === 'happy'
         ? COMMODITY_MAP_LAYERS
         : SITE_VARIANT === 'energy'
           ? ENERGY_MAP_LAYERS
-          : FULL_MAP_LAYERS;
+          : SITE_VARIANT === 'scm'
+            ? SCM_MAP_LAYERS
+            : FULL_MAP_LAYERS;
 
 export const MOBILE_DEFAULT_MAP_LAYERS = SITE_VARIANT === 'happy'
   ? HAPPY_MOBILE_MAP_LAYERS
@@ -1201,7 +1355,9 @@ export const MOBILE_DEFAULT_MAP_LAYERS = SITE_VARIANT === 'happy'
         ? COMMODITY_MOBILE_MAP_LAYERS
         : SITE_VARIANT === 'energy'
           ? ENERGY_MOBILE_MAP_LAYERS
-          : FULL_MOBILE_MAP_LAYERS;
+          : SITE_VARIANT === 'scm'
+            ? SCM_MOBILE_MAP_LAYERS
+            : FULL_MOBILE_MAP_LAYERS;
 
 /** Maps map-layer toggle keys to their data-freshness source IDs (single source of truth). */
 export const LAYER_TO_SOURCE: Partial<Record<keyof MapLayers, DataSourceId[]>> = {

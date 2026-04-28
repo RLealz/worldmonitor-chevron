@@ -24,6 +24,7 @@ import { getRpcBaseUrl } from '@/services/rpc-client';
 import { fetchHormuzTracker, type HormuzTrackerData } from '@/services/hormuz-tracker';
 import { getEuGasStorageData } from '@/services/economic';
 import { fetchCommodityQuotes } from '@/services/market';
+import { SITE_VARIANT } from '@/config/variant';
 import { SupplyChainServiceClient } from '@/generated/client/worldmonitor/supply_chain/v1/service_client';
 import { buildOverviewState, type OverviewState } from './_energy-risk-overview-state';
 
@@ -33,6 +34,9 @@ const supplyChain = new SupplyChainServiceClient(getRpcBaseUrl(), {
 
 const BRENT_SYMBOL = 'BZ=F';
 const BRENT_META = [{ symbol: BRENT_SYMBOL, name: 'Brent Crude', display: 'BRENT' }];
+const IS_SCM_VARIANT = SITE_VARIANT === 'scm';
+const SCM_STALE_MINUTES = 180;
+const SCM_VERY_STALE_MINUTES = 24 * 60;
 
 // Default pinned crisis-start date for the running Hormuz situation. Overridable
 // via VITE_HORMUZ_CRISIS_START_DATE so the date can be re-pinned without a
@@ -81,14 +85,15 @@ export class EnergyRiskOverviewPanel extends Panel {
   constructor() {
     super({
       id: 'energy-risk-overview',
-      title: 'Global Energy Risk Overview',
+      title: IS_SCM_VARIANT ? 'Public Energy Supply Risk Overview' : 'Global Energy Risk Overview',
       defaultRowSpan: 1,
-      infoTooltip:
-        'Consolidated executive view: Strait of Hormuz vessel status, EU gas ' +
-        'storage fill, Brent crude price + 1-day change, active disruption ' +
-        'count, data freshness, and a configurable crisis-day counter. Each ' +
-        'tile renders independently; one source failing does not block the ' +
-        'others.',
+      infoTooltip: IS_SCM_VARIANT
+        ? 'Public-data SCM summary of Hormuz status, EU gas storage, Brent, active disruptions, and freshness. Blank tiles mean the public upstream failed or returned no current public reading; the crisis-day counter is demo framing only.'
+        : 'Consolidated executive view: Strait of Hormuz vessel status, EU gas ' +
+          'storage fill, Brent crude price + 1-day change, active disruption ' +
+          'count, data freshness, and a configurable crisis-day counter. Each ' +
+          'tile renders independently; one source failing does not block the ' +
+          'others.',
     });
   }
 
@@ -129,7 +134,11 @@ export class EnergyRiskOverviewPanel extends Panel {
 
   private render(): void {
     injectRiskOverviewStylesOnce();
+    const noteHtml = IS_SCM_VARIANT
+      ? '<div class="ero-note">Public-data SCM demo. A "—" tile means the public upstream failed or returned no current public reading; this overview does not yet split those two cases.</div>'
+      : '';
     const html = `
+      ${noteHtml}
       <div class="ero-grid">
         ${this.renderHormuzTile()}
         ${this.renderEuGasTile()}
@@ -204,6 +213,10 @@ export class EnergyRiskOverviewPanel extends Panel {
     const youngest = Math.max(...fetchedAts);
     const ageMin = Math.floor((Date.now() - youngest) / 60_000);
     const label = ageMin <= 0 ? 'just now' : ageMin === 1 ? '1 min ago' : `${ageMin} min ago`;
+    if (IS_SCM_VARIANT && ageMin >= SCM_STALE_MINUTES) {
+      const color = ageMin >= SCM_VERY_STALE_MINUTES ? '#e67e22' : '#f39c12';
+      return tileHtml('Public update', 'stale', color, '', `last update ${label}`);
+    }
     return tileHtml('Updated', label, '#7f8c8d');
   }
 
@@ -216,9 +229,9 @@ export class EnergyRiskOverviewPanel extends Panel {
     const days = Math.floor((Date.now() - CRISIS_START_MS) / 86_400_000);
     if (days < 0) {
       // Future-dated start: still render but with a sentinel value.
-      return tileHtml('Hormuz crisis', 'pending', '#7f8c8d');
+      return tileHtml(IS_SCM_VARIANT ? 'Hormuz watch' : 'Hormuz crisis', 'pending', '#7f8c8d', '', IS_SCM_VARIANT ? 'demo framing' : '');
     }
-    return tileHtml('Hormuz crisis', `Day ${days}`, '#7f8c8d');
+    return tileHtml(IS_SCM_VARIANT ? 'Hormuz watch' : 'Hormuz crisis', `Day ${days}`, '#7f8c8d', '', IS_SCM_VARIANT ? 'demo framing' : '');
   }
 }
 
@@ -249,6 +262,13 @@ function injectRiskOverviewStylesOnce(): void {
 }
 
 const RISK_OVERVIEW_CSS = `
+  .ero-note {
+    margin: 0 8px;
+    padding: 8px 10px 0;
+    font-size: 11px;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.68);
+  }
   .ero-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));

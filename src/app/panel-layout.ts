@@ -478,6 +478,15 @@ export class PanelLayoutManager implements AppModule {
               <span class="variant-label">${t('header.energy')}</span>
             </a>
             <span class="variant-divider"></span>
+            <a href="${vHref('scm', 'https://scm.worldmonitor.app')}"
+               class="variant-option ${SITE_VARIANT === 'scm' ? 'active' : ''}"
+               data-variant="scm"
+               ${vTarget('scm')}
+               title="SCM Demo${SITE_VARIANT === 'scm' ? ` ${t('common.currentVariant')}` : ''}">
+              <span class="variant-icon">🚚</span>
+              <span class="variant-label">SCM Demo</span>
+            </a>
+            <span class="variant-divider"></span>
             <a href="${vHref('happy', 'https://happy.worldmonitor.app')}"
                class="variant-option ${SITE_VARIANT === 'happy' ? 'active' : ''}"
                data-variant="happy"
@@ -544,6 +553,7 @@ export class PanelLayoutManager implements AppModule {
           { key: 'finance', icon: '📈', label: t('header.finance') },
           { key: 'commodity', icon: '⛏️', label: t('header.commodity') },
           { key: 'energy', icon: '⚡', label: t('header.energy') },
+          { key: 'scm', icon: '🚚', label: 'SCM Demo' },
           { key: 'happy', icon: '☀️', label: 'Good News' },
         ];
         return variants.map(v =>

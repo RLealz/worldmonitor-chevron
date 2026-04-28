@@ -18,10 +18,13 @@ import { getAuthState, subscribeAuthState } from '@/services/auth-state';
 import { hasPremiumAccess } from '@/services/panel-gating';
 import { trackGateHit } from '@/services/analytics';
 import { runScenario, getScenarioStatus } from '@/services/scenario';
+import { SITE_VARIANT } from '@/config/variant';
 
 type TabId = 'chokepoints' | 'shipping' | 'indicators' | 'minerals' | 'stress';
 
 const FLOW_SUPPORTED_IDS = new Set(['hormuz_strait', 'malacca_strait', 'suez', 'bab_el_mandeb']);
+const IS_SCM_VARIANT = SITE_VARIANT === 'scm';
+const SCM_STALE_DATA_MS = 24 * 60 * 60 * 1000;
 
 export class SupplyChainPanel extends Panel {
   private shippingData: GetShippingRatesResponse | null = null;
@@ -139,9 +142,10 @@ export class SupplyChainPanel extends Panel {
       : (this.activeTab === 'shipping' || this.activeTab === 'indicators') ? this.shippingData
       : this.activeTab === 'stress' ? this.stressData
       : this.mineralsData;
-    const unavailableBanner = !activeHasData && activeData?.upstreamUnavailable
-      ? `<div class="economic-warning">${t('components.supplyChain.upstreamUnavailable')}</div>`
-      : '';
+    const stateBanner = this.renderStateBanner(
+      activeHasData,
+      activeData as { upstreamUnavailable?: boolean; fetchedAt?: string | number } | null,
+    );
 
     let contentHtml = '';
     switch (this.activeTab) {
@@ -154,7 +158,7 @@ export class SupplyChainPanel extends Panel {
 
     this.setContent(`
       ${tabsHtml}
-      ${unavailableBanner}
+      ${stateBanner}
       <div class="economic-content">${contentHtml}</div>
     `);
 
@@ -323,9 +327,76 @@ export class SupplyChainPanel extends Panel {
     });
   }
 
+  private renderStateBanner(
+    activeHasData: boolean,
+    activeData: { upstreamUnavailable?: boolean; fetchedAt?: string | number } | null,
+  ): string {
+    if (!IS_SCM_VARIANT) {
+      return !activeHasData && activeData?.upstreamUnavailable
+        ? `<div class="economic-warning">${t('components.supplyChain.upstreamUnavailable')}</div>`
+        : '';
+    }
+
+    const tabLabel = escapeHtml(this.getTabLabel(this.activeTab));
+    if (!activeHasData && activeData?.upstreamUnavailable) {
+      return `<div class="economic-warning">Public upstream unavailable for ${tabLabel}. This SCM demo does not infer proprietary data.</div>`;
+    }
+    if (!activeHasData && activeData) {
+      return `<div class="economic-empty">No current public data returned for ${tabLabel}. This SCM demo only shows open-source coverage.</div>`;
+    }
+
+    const fetchedAtMs = this.getFetchedAtMs(activeData?.fetchedAt);
+    if (activeHasData && fetchedAtMs !== null) {
+      const ageMs = Date.now() - fetchedAtMs;
+      if (ageMs >= SCM_STALE_DATA_MS) {
+        return `<div class="economic-warning">Public ${tabLabel} data is stale in this SCM demo. Showing the last successful update from ${escapeHtml(this.formatRelativeAge(ageMs))} ago.</div>`;
+      }
+    }
+
+    if (this.activeTab === 'chokepoints') {
+      return '<div class="trade-sector" style="padding:8px;opacity:0.72">SCM demo note: closure scenarios are demo-only assumptions derived from public routing and chokepoint data.</div>';
+    }
+    return '';
+  }
+
+  private getTabLabel(tab: TabId): string {
+    switch (tab) {
+      case 'chokepoints':
+        return 'chokepoint coverage';
+      case 'shipping':
+        return 'shipping signals';
+      case 'indicators':
+        return 'shipping indicators';
+      case 'minerals':
+        return 'materials coverage';
+      case 'stress':
+        return 'shipping stress';
+    }
+  }
+
+  private getFetchedAtMs(value: string | number | undefined): number | null {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) && value > 0 ? value : null;
+    }
+    if (typeof value === 'string' && value.trim().length > 0) {
+      const parsed = Date.parse(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
+  }
+
+  private formatRelativeAge(ageMs: number): string {
+    const minutes = Math.max(1, Math.floor(ageMs / 60_000));
+    if (minutes < 60) return `${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 48) return `${hours} hour${hours === 1 ? '' : 's'}`;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days === 1 ? '' : 's'}`;
+  }
+
   private renderChokepoints(): string {
     if (!this.chokepointData || !this.chokepointData.chokepoints?.length) {
-      return `<div class="economic-empty">${t('components.supplyChain.noChokepoints')}</div>`;
+      return `<div class="economic-empty">${escapeHtml(IS_SCM_VARIANT ? 'No current public chokepoint data returned for this SCM demo.' : t('components.supplyChain.noChokepoints'))}</div>`;
     }
 
     // Scenario projection overlay: when a scenario is active, show the
@@ -451,7 +522,7 @@ export class SupplyChainPanel extends Panel {
               <span>${cp.activeWarnings} ${t('components.supplyChain.warnings')} · ${aisDisruptions} ${t('components.supplyChain.aisDisruptions')}</span>
               ${cp.directions?.length ? `<span>${cp.directions.map(d => escapeHtml(d)).join('/')}</span>` : ''}
             </div>
-            ${ts && ts.dataAvailable === false ? `<div class="sc-metric-row" style="opacity:0.5;font-size:11px"><span>${t('components.supplyChain.transitDataUnavailable') || 'Transit data unavailable (upstream partial)'}</span></div>` : ''}
+            ${ts && ts.dataAvailable === false ? `<div class="sc-metric-row" style="opacity:0.5;font-size:11px"><span>${escapeHtml(IS_SCM_VARIANT ? 'Transit history unavailable from the public upstream (partial coverage).' : (t('components.supplyChain.transitDataUnavailable') || 'Transit data unavailable (upstream partial)'))}</span></div>` : ''}
             ${ts && ts.dataAvailable !== false && (ts.todayTotal > 0 || hasWow || disruptPct > 0) ? `<div class="sc-metric-row">
               ${ts.todayTotal > 0 ? `<span>${ts.todayTotal} ${t('components.supplyChain.vessels')}</span>` : ''}
               ${hasWow ? `<span>${t('components.supplyChain.wowChange')}: ${wowSpan}</span>` : ''}
@@ -492,7 +563,7 @@ export class SupplyChainPanel extends Panel {
     const disruptionHtml = this.renderDisruptionSnapshot();
 
     if (!hasFred && !disruptionHtml) {
-      return `<div class="economic-empty">${t('components.supplyChain.noShipping')}</div>`;
+      return `<div class="economic-empty">${escapeHtml(IS_SCM_VARIANT ? 'No current public shipping data returned for this SCM demo.' : t('components.supplyChain.noShipping'))}</div>`;
     }
 
     return `<div class="trade-restrictions-list">
@@ -590,13 +661,13 @@ export class SupplyChainPanel extends Panel {
   private renderIndicators(): string {
     if (isDesktopRuntime() && !isFeatureAvailable('supplyChain')) return '';
     if (!this.shippingData?.indices?.length) {
-      return `<div class="economic-empty">${t('components.supplyChain.noShipping')}</div>`;
+      return `<div class="economic-empty">${escapeHtml(IS_SCM_VARIANT ? 'No current public shipping indicators returned for this SCM demo.' : t('components.supplyChain.noShipping'))}</div>`;
     }
     const container = new Set(['SCFI', 'CCFI']);
     const bulk = new Set(['BDI', 'BCI', 'BPI', 'BSI', 'BHSI']);
     const econIndices = this.shippingData.indices.filter(i => !container.has(i.indexId) && !bulk.has(i.indexId));
     if (!econIndices.length) {
-      return `<div class="economic-empty">${t('components.supplyChain.noShipping')}</div>`;
+      return `<div class="economic-empty">${escapeHtml(IS_SCM_VARIANT ? 'No current public shipping indicators returned for this SCM demo.' : t('components.supplyChain.noShipping'))}</div>`;
     }
     const cards = econIndices.map(idx => {
       const changeClass = idx.changePct >= 0 ? 'change-positive' : 'change-negative';
@@ -622,7 +693,7 @@ export class SupplyChainPanel extends Panel {
 
   private renderStress(): string {
     if (!this.stressData || !this.stressData.carriers?.length) {
-      return `<div class="economic-empty">Shipping stress data unavailable</div>`;
+      return `<div class="economic-empty">${escapeHtml(IS_SCM_VARIANT ? 'No current public shipping stress data returned for this SCM demo.' : 'Shipping stress data unavailable')}</div>`;
     }
 
     const { stressScore, stressLevel, carriers } = this.stressData;
@@ -694,7 +765,7 @@ export class SupplyChainPanel extends Panel {
 
   private renderMinerals(): string {
     if (!this.mineralsData || !this.mineralsData.minerals?.length) {
-      return `<div class="economic-empty">${t('components.supplyChain.noMinerals')}</div>`;
+      return `<div class="economic-empty">${escapeHtml(IS_SCM_VARIANT ? 'No current public materials data returned for this SCM demo.' : t('components.supplyChain.noMinerals'))}</div>`;
     }
 
     const rows = this.mineralsData.minerals.map(m => {
@@ -778,7 +849,7 @@ export class SupplyChainPanel extends Panel {
 
     const taglineParts = [durationStr, closurePctStr, costStr].filter(Boolean).join(' / ');
     const taglineHtml = taglineParts
-      ? `<div class="sc-scenario-tagline">Simulating ${escapeHtml(taglineParts)} on ${result.affectedChokepointIds.length} chokepoint${result.affectedChokepointIds.length === 1 ? '' : 's'}. Chokepoint card below shows projected score; map highlights disrupted routes.</div>`
+      ? `<div class="sc-scenario-tagline">${IS_SCM_VARIANT ? 'SCM demo assumption from public routing heuristics: simulating' : 'Simulating'} ${escapeHtml(taglineParts)} on ${result.affectedChokepointIds.length} chokepoint${result.affectedChokepointIds.length === 1 ? '' : 's'}. Chokepoint card below shows projected score; map highlights disrupted routes.</div>`
       : '';
 
     banner.innerHTML = [
