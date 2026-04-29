@@ -32,9 +32,13 @@ import { getAuthState } from '@/services/auth-state';
 import { trackGateHit, track, type UmamiEvent } from '@/services/analytics';
 
 import { TRADE_ROUTES } from '@/config/trade-routes';
+import { SITE_VARIANT } from '@/config/variant';
+import { buildScmRouteMaterialContext, listScmRoutePresets } from '@/utils/scm-route-material-context';
+import type { ScmRoutePreset } from '@/types/scm-route-materials';
 
 const TAB_LABELS: Record<ExplorerTab, string> = { 1: 'Current', 2: 'Alternatives', 3: 'Land', 4: 'Impact' };
 const FETCH_DEBOUNCE_MS = 250;
+const IS_SCM_VARIANT = SITE_VARIANT === 'scm';
 
 const CARGO_TO_ROUTE_CATEGORY: Record<string, string> = {
   container: 'container',
@@ -407,7 +411,10 @@ export class RouteExplorer {
 
     const surface = document.createElement('div');
     surface.className = 're-modal__surface';
-    surface.append(this.buildQueryBar(), this.buildTabStrip(), this.buildBody());
+    const queryBar = this.buildQueryBar();
+    surface.append(queryBar);
+    if (IS_SCM_VARIANT) surface.append(this.buildScmPresetStrip());
+    surface.append(this.buildTabStrip(), this.buildBody());
 
     root.append(surface);
     return root;
@@ -460,6 +467,66 @@ export class RouteExplorer {
 
     bar.append(back, this.fromPicker.element, arrow, this.toPicker.element, this.hs2Picker.element, this.cargoDropdown.element);
     return bar;
+  }
+
+  private buildScmPresetStrip(): HTMLDivElement {
+    const strip = document.createElement('div');
+    strip.className = 're-scm-presets';
+
+    const heading = document.createElement('div');
+    heading.className = 're-scm-presets__heading';
+    heading.textContent = 'Public demo corridors';
+    strip.append(heading);
+
+    for (const preset of listScmRoutePresets()) {
+      const summary = buildScmRouteMaterialContext({ preset });
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 're-scm-presets__button';
+      button.dataset.presetId = preset.id;
+      button.title = `${preset.sourceNote.source}: ${preset.sourceNote.note}`;
+      button.addEventListener('click', () => this.applyScmRoutePreset(preset));
+
+      const label = document.createElement('span');
+      label.className = 're-scm-presets__label';
+      label.textContent = preset.label.replace(/^Demo\s+/i, '');
+
+      const meta = document.createElement('span');
+      meta.className = 're-scm-presets__meta';
+      meta.textContent = `${preset.originIso2}->${preset.destinationIso2} · HS ${preset.hs2} · ${summary.confidence}`;
+
+      const note = document.createElement('span');
+      note.className = 're-scm-presets__note';
+      note.textContent = preset.freshnessLabel;
+
+      button.append(label, meta, note);
+      strip.append(button);
+    }
+
+    return strip;
+  }
+
+  private applyScmRoutePreset(preset: ScmRoutePreset): void {
+    this.cargoManual = true;
+    this.state = {
+      ...this.state,
+      fromIso2: preset.originIso2,
+      toIso2: preset.destinationIso2,
+      hs2: preset.hs2,
+      cargo: preset.cargoType,
+      tab: 1,
+    };
+    this.writeStateToUrl();
+    this.fromPicker.setValue(preset.originIso2);
+    this.toPicker.setValue(preset.destinationIso2);
+    this.hs2Picker.setValue(preset.hs2);
+    this.cargoDropdown.setValue(preset.cargoType, false);
+    this.setTab(1);
+    this.trackEvent('route-explorer:query', {
+      presetId: preset.id,
+      posture: preset.dataPosture,
+    });
+    this.scheduleFetch();
   }
 
   private buildTabStrip(): HTMLDivElement {

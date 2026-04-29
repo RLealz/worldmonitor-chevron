@@ -10,6 +10,7 @@ const variantMetaSource = readFileSync(new URL('variant-meta.ts', CONFIG_SRC), '
 const panelsSource = readFileSync(new URL('panels.ts', CONFIG_SRC), 'utf8');
 const energyRiskOverviewSource = readFileSync(new URL('EnergyRiskOverviewPanel.ts', COMPONENTS_SRC), 'utf8');
 const supplyChainPanelSource = readFileSync(new URL('SupplyChainPanel.ts', COMPONENTS_SRC), 'utf8');
+const routeExplorerSource = readFileSync(new URL('RouteExplorer/RouteExplorer.ts', COMPONENTS_SRC), 'utf8');
 const sanctionsPressurePanelSource = readFileSync(new URL('SanctionsPressurePanel.ts', COMPONENTS_SRC), 'utf8');
 const tradePolicyPanelSource = readFileSync(new URL('TradePolicyPanel.ts', COMPONENTS_SRC), 'utf8');
 
@@ -231,6 +232,21 @@ describe('SCM variant config guardrails', () => {
       'Supply chain scenario framing must stay demo-only',
     );
     assert.match(
+      supplyChainPanelSource,
+      /Route\/material context/,
+      'Supply chain panel must surface route/material context in SCM',
+    );
+    assert.match(
+      routeExplorerSource,
+      /Public demo corridors/,
+      'Route Explorer must expose public demo corridor presets in SCM',
+    );
+    assert.match(
+      energyRiskOverviewSource,
+      /Brent is market context, while Hormuz, storage, and active disruptions are public operational signals\./,
+      'Energy overview must distinguish market context from operational public signals',
+    );
+    assert.match(
       sanctionsPressurePanelSource,
       /public list pressure and optional public entity lookup evidence are screening signals for analyst review/,
       'Sanctions pressure panel must frame SCM context as public screening evidence',
@@ -249,6 +265,7 @@ describe('SCM variant config guardrails', () => {
       panelsSource,
       energyRiskOverviewSource,
       supplyChainPanelSource,
+      routeExplorerSource,
       sanctionsPressurePanelSource,
       tradePolicyPanelSource,
     ].join('\n');

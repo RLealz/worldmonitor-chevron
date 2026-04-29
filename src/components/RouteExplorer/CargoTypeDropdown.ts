@@ -58,4 +58,9 @@ export class CargoTypeDropdown {
     this.select.value = cargo;
     this.autoBadge.style.display = '';
   }
+
+  public setValue(cargo: ExplorerCargo, autoInferred = false): void {
+    this.select.value = cargo;
+    this.autoBadge.style.display = autoInferred ? '' : 'none';
+  }
 }

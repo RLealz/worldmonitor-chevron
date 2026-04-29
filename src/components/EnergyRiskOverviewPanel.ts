@@ -135,7 +135,7 @@ export class EnergyRiskOverviewPanel extends Panel {
   private render(): void {
     injectRiskOverviewStylesOnce();
     const noteHtml = IS_SCM_VARIANT
-      ? '<div class="ero-note">Public-data SCM demo. A "—" tile means the public upstream failed or returned no current public reading; this overview does not yet split those two cases.</div>'
+      ? '<div class="ero-note">Public-data SCM demo. A "—" tile means the public upstream failed or returned no current public reading; this overview does not yet split those two cases. Brent is market context, while Hormuz, storage, and active disruptions are public operational signals.</div>'
       : '';
     const html = `
       ${noteHtml}

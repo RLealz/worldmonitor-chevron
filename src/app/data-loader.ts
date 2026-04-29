@@ -201,6 +201,7 @@ import { fetchShippingStress } from '@/services/supply-chain';
 import { PUBLIC_SUPPLIER_RISK_ARCHETYPES } from '@/config/supplier-risk-archetypes';
 import { buildSupplierRiskSummaries } from '@/utils/supplier-risk-signals';
 import { buildComplianceExposureSummaries } from '@/utils/compliance-exposure';
+import { buildScmRouteMaterialContexts } from '@/utils/scm-route-material-context';
 import type {
   ComplianceExposureEntityLookupInput,
   ComplianceExposureInputs,
@@ -2952,7 +2953,13 @@ export class DataLoaderManager implements AppModule {
       const stressData = stress.status === 'fulfilled' ? stress.value : null;
 
       if (shippingData) scPanel.updateShippingRates(shippingData);
-      if (chokepointData) scPanel.updateChokepointStatus(chokepointData);
+      if (chokepointData) {
+        scPanel.updateChokepointStatus(chokepointData);
+        if (SITE_VARIANT === 'scm') {
+          const scores = new Map(chokepointData.chokepoints.map(cp => [cp.id, cp.disruptionScore] as const));
+          scPanel.updateScmRouteMaterialContexts(buildScmRouteMaterialContexts(scores));
+        }
+      }
       if (chokepointData) this.ctx.map?.setChokepointData(chokepointData);
       if (chokepointData) this.updateSupplierRiskFromChokepoints(chokepointData);
       if (mineralsData) scPanel.updateCriticalMinerals(mineralsData);

@@ -19,6 +19,7 @@ import { hasPremiumAccess } from '@/services/panel-gating';
 import { trackGateHit } from '@/services/analytics';
 import { runScenario, getScenarioStatus } from '@/services/scenario';
 import { SITE_VARIANT } from '@/config/variant';
+import type { ScmRouteMaterialContextSummary } from '@/types/scm-route-materials';
 
 type TabId = 'chokepoints' | 'shipping' | 'indicators' | 'minerals' | 'stress';
 
@@ -31,6 +32,7 @@ export class SupplyChainPanel extends Panel {
   private chokepointData: GetChokepointStatusResponse | null = null;
   private mineralsData: GetCriticalMineralsResponse | null = null;
   private stressData: GetShippingStressResponse | null = null;
+  private scmRouteMaterialContexts: ScmRouteMaterialContextSummary[] = [];
   private activeTab: TabId = 'chokepoints';
   private expandedChokepoint: string | null = null;
   private transitChart = new TransitChart();
@@ -106,6 +108,11 @@ export class SupplyChainPanel extends Panel {
     this.render();
   }
 
+  public updateScmRouteMaterialContexts(data: ScmRouteMaterialContextSummary[]): void {
+    this.scmRouteMaterialContexts = data;
+    this.render();
+  }
+
   private render(): void {
     this.clearTransitChart();
 
@@ -159,6 +166,7 @@ export class SupplyChainPanel extends Panel {
     this.setContent(`
       ${tabsHtml}
       ${stateBanner}
+      ${IS_SCM_VARIANT ? this.renderScmRouteMaterialContext() : ''}
       <div class="economic-content">${contentHtml}</div>
     `);
 
@@ -392,6 +400,45 @@ export class SupplyChainPanel extends Panel {
     if (hours < 48) return `${hours} hour${hours === 1 ? '' : 's'}`;
     const days = Math.floor(hours / 24);
     return `${days} day${days === 1 ? '' : 's'}`;
+  }
+
+  private renderScmRouteMaterialContext(): string {
+    if (!this.scmRouteMaterialContexts.length) {
+      return '<div class="scm-route-context scm-route-context--empty">Public demo route/material context is waiting for chokepoint data. No operational route absence is implied.</div>';
+    }
+
+    const contexts = [...this.scmRouteMaterialContexts]
+      .sort((a, b) => b.maxChokepointScore - a.maxChokepointScore || a.label.localeCompare(b.label))
+      .slice(0, 3);
+
+    const cards = contexts.map(ctx => {
+      const materials = ctx.materials.slice(0, 2).map(material => {
+        const label = material.productLabel
+          ? `${material.label} (HS ${material.hs2})`
+          : material.label;
+        return `<span class="scm-route-context__chip scm-route-context__chip--${escapeHtml(material.confidence)}">${escapeHtml(label)}</span>`;
+      }).join('');
+      const fallback = ctx.degradedStateCopy
+        ? `<div class="scm-route-context__fallback">${escapeHtml(ctx.degradedStateCopy)}</div>`
+        : '';
+      return `<div class="scm-route-context__card">
+        <div class="scm-route-context__top">
+          <span class="scm-route-context__title">${escapeHtml(ctx.label.replace(/^Demo\s+/i, ''))}</span>
+          <span class="scm-route-context__score">${ctx.maxChokepointScore}/100</span>
+        </div>
+        <div class="scm-route-context__route">${escapeHtml(ctx.originIso2)} → ${escapeHtml(ctx.destinationIso2)} · ${escapeHtml(ctx.productLabel)} · ${escapeHtml(ctx.cargoType)}</div>
+        <div class="scm-route-context__chips">${materials}</div>
+        ${fallback}
+      </div>`;
+    }).join('');
+
+    return `<section class="scm-route-context" aria-label="Public demo route and material context">
+      <div class="scm-route-context__header">
+        <span>Route/material context</span>
+        <em>Public demo corridors; market signals are context, not operational SCM evidence.</em>
+      </div>
+      ${cards}
+    </section>`;
   }
 
   private renderChokepoints(): string {
