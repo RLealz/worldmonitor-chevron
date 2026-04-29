@@ -3,19 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: Phase 4 - Route and Materials Deepening
-status: ready_for_planning
-last_updated: "2026-04-28T23:20:00.000Z"
+status: ready_for_execution
+last_updated: "2026-04-29T00:00:00.000Z"
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 9
+  total_plans: 12
   completed_plans: 9
 ---
 
 # Project State: Chevron SCM Demo Dashboard
 
 **Initialized:** 2026-04-28  
-**Status:** Phase 3 complete; ready for Phase 4 planning
+**Status:** Phase 4 planned; ready for Phase 4 execution
 **Current phase:** Phase 4 - Route and Materials Deepening
 
 ## Project Reference
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-28)
 
 ## Current Focus
 
-Plan route and materials deepening now that the SCM demo shell, supplier-risk signal layer, and evidence-first sanctions/trade exposure layer are runnable.
+Execute route and materials deepening now that the SCM demo shell, supplier-risk signal layer, evidence-first sanctions/trade exposure layer, and Phase 4 route/material plan are ready.
 
 ## Completed Phases
 
@@ -55,10 +55,11 @@ Plan route and materials deepening now that the SCM demo shell, supplier-risk si
 - `.planning/chevron-scm-variant-plan.md`
 - `.planning/phases/02-supplier-risk-signals/`
 - `.planning/phases/03-sanctions-and-trade-exposure/`
+- `.planning/phases/04-route-and-materials-deepening/`
 
 ## Next Step
 
-Run `$gsd-plan-phase 4` to plan route and materials deepening.
+Run `$gsd-execute-phase 4` to implement public/demo route presets, route/material context, UI wiring, and verification.
 
 ---
 *State initialized: 2026-04-28*
