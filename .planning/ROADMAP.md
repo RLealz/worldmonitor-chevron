@@ -13,7 +13,7 @@ The roadmap builds a safe public-data SCM demo in five phases. Phase 1 creates t
 - [x] Phase 1 - Public SCM Variant Shell completed on 2026-04-28.
 - [x] Phase 2 - Supplier Risk Signals completed on 2026-04-28.
 - [x] Phase 3 - Sanctions and Trade Exposure completed on 2026-04-28.
-- [ ] Phase 4 - Route and Materials Deepening
+- [x] Phase 4 - Route and Materials Deepening completed on 2026-04-29.
 - [ ] Phase 5 - Demo Hardening and Safety Review
 
 | # | Phase | Goal | Requirements | Success Criteria |
@@ -114,6 +114,16 @@ The roadmap builds a safe public-data SCM demo in five phases. Phase 1 creates t
 
 - Reuse `src/components/RouteExplorer/`, `SupplyChainPanel`, energy map layers, and existing supply-chain RPCs.
 - Keep route presets static/demo unless backed by public evidence.
+
+**Completed:** 2026-04-29
+
+**Delivered:**
+
+- Public/demo route and material context model with route presets, material mapping confidence, source/freshness fields, degraded-state copy, and market-vs-operational framing.
+- SCM-only Route Explorer public demo corridor presets that apply country, HS2, and cargo state without implying internal Chevron routes.
+- Supply Chain route/material summaries connected to public chokepoint scores, countries, products, materials, and fallback copy.
+- Energy overview wording that distinguishes market context from public operational SCM signals.
+- Guardrails and verification for route presets, material fallback behavior, SCM registration, typecheck, boundary lint, and SCM build smoke.
 
 ## Phase 5: Demo Hardening and Safety Review
 

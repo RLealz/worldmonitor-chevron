@@ -28,10 +28,10 @@
 
 ### Routes
 
-- [ ] **RTE-01**: User can evaluate port and route disruption using existing Route Explorer, chokepoint, route impact, bypass, maritime, and map-layer capabilities.
-- [ ] **RTE-02**: User can view public/demo route presets or corridor groupings relevant to energy SCM without implying Chevron internal routes.
-- [ ] **RTE-03**: User can move from a route/chokepoint disruption signal to relevant country, product, and material impact context.
-- [ ] **RTE-04**: User can see clear freshness/degraded-state indicators for route, port, chokepoint, AIS, and upstream availability data.
+- [x] **RTE-01**: User can evaluate port and route disruption using existing Route Explorer, chokepoint, route impact, bypass, maritime, and map-layer capabilities.
+- [x] **RTE-02**: User can view public/demo route presets or corridor groupings relevant to energy SCM without implying Chevron internal routes.
+- [x] **RTE-03**: User can move from a route/chokepoint disruption signal to relevant country, product, and material impact context.
+- [x] **RTE-04**: User can see clear freshness/degraded-state indicators for route, port, chokepoint, AIS, and upstream availability data.
 
 ### Compliance
 
@@ -42,10 +42,10 @@
 
 ### Materials
 
-- [ ] **MAT-01**: User can view energy materials risk using critical minerals, commodities, pipelines, storage facilities, fuel shortages, energy disruptions, and energy-market panels.
-- [ ] **MAT-02**: User can see material-to-country/product/route signals where mappings are defensible from public data.
-- [ ] **MAT-03**: User sees fallback copy when material-to-HS/product mapping confidence is low or absent.
-- [ ] **MAT-04**: User can distinguish energy market signals from operational SCM evidence.
+- [x] **MAT-01**: User can view energy materials risk using critical minerals, commodities, pipelines, storage facilities, fuel shortages, energy disruptions, and energy-market panels.
+- [x] **MAT-02**: User can see material-to-country/product/route signals where mappings are defensible from public data.
+- [x] **MAT-03**: User sees fallback copy when material-to-HS/product mapping confidence is low or absent.
+- [x] **MAT-04**: User can distinguish energy market signals from operational SCM evidence.
 
 ### Verification
 
@@ -106,14 +106,14 @@
 | CMP-02 | Phase 3 | Complete |
 | CMP-03 | Phase 3 | Complete |
 | CMP-04 | Phase 3 | Complete |
-| RTE-01 | Phase 4 | Pending |
-| RTE-02 | Phase 4 | Pending |
-| RTE-03 | Phase 4 | Pending |
-| RTE-04 | Phase 4 | Pending |
-| MAT-01 | Phase 4 | Pending |
-| MAT-02 | Phase 4 | Pending |
-| MAT-03 | Phase 4 | Pending |
-| MAT-04 | Phase 4 | Pending |
+| RTE-01 | Phase 4 | Complete |
+| RTE-02 | Phase 4 | Complete |
+| RTE-03 | Phase 4 | Complete |
+| RTE-04 | Phase 4 | Complete |
+| MAT-01 | Phase 4 | Complete |
+| MAT-02 | Phase 4 | Complete |
+| MAT-03 | Phase 4 | Complete |
+| MAT-04 | Phase 4 | Complete |
 | VER-04 | Phase 5 | Pending |
 
 **Coverage:**
@@ -123,4 +123,4 @@
 
 ---
 *Requirements defined: 2026-04-28*  
-*Last updated: 2026-04-28 after initial definition*
+*Last updated: 2026-04-29 after Phase 4 route/material execution*

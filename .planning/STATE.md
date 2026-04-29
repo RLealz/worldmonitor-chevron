@@ -2,21 +2,21 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: Phase 4 - Route and Materials Deepening
-status: ready_for_execution
-last_updated: "2026-04-29T00:00:00.000Z"
+current_phase: Phase 5 - Demo Hardening and Safety Review
+status: ready_for_planning
+last_updated: "2026-04-29T01:30:00.000Z"
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 12
-  completed_plans: 9
+  completed_plans: 12
 ---
 
 # Project State: Chevron SCM Demo Dashboard
 
 **Initialized:** 2026-04-28  
-**Status:** Phase 4 planned; ready for Phase 4 execution
-**Current phase:** Phase 4 - Route and Materials Deepening
+**Status:** Phase 4 complete; ready for Phase 5 planning
+**Current phase:** Phase 5 - Demo Hardening and Safety Review
 
 ## Project Reference
 
@@ -26,13 +26,14 @@ See: `.planning/PROJECT.md` (updated 2026-04-28)
 
 ## Current Focus
 
-Execute route and materials deepening now that the SCM demo shell, supplier-risk signal layer, evidence-first sanctions/trade exposure layer, and Phase 4 route/material plan are ready.
+Plan final demo hardening and safety review now that the SCM demo shell, supplier-risk signal layer, evidence-first sanctions/trade exposure layer, and route/material workflows are runnable.
 
 ## Completed Phases
 
 - Phase 1 - Public SCM Variant Shell completed on 2026-04-28.
 - Phase 2 - Supplier Risk Signals completed on 2026-04-28.
 - Phase 3 - Sanctions and Trade Exposure completed on 2026-04-28.
+- Phase 4 - Route and Materials Deepening completed on 2026-04-29.
 
 ## Key Decisions
 
@@ -42,6 +43,7 @@ Execute route and materials deepening now that the SCM demo shell, supplier-risk
 - Reuse existing supply-chain, Route Explorer, sanctions, trade, maritime/chokepoint, energy disruption, critical minerals, pipeline, storage, fuel shortage, commodity, and energy-market surfaces first.
 - Supplier-risk records are synthetic archetypes or public-signal summaries, with every claim carrying source, timestamp, confidence, and reason.
 - Sanctions/trade exposure is framed as public screening context with source/list/date provenance and no final legal determinations.
+- Route and materials context is framed through public demo corridors, confidence-scored material mappings, source/freshness labels, degraded-state copy, and clear market-vs-operational signal separation.
 - Defer proprietary data ingestion, enterprise RBAC, audit logging, legal evidence retention, and production hardening.
 
 ## Planning Artifacts
@@ -59,7 +61,7 @@ Execute route and materials deepening now that the SCM demo shell, supplier-risk
 
 ## Next Step
 
-Run `$gsd-execute-phase 4` to implement public/demo route presets, route/material context, UI wiring, and verification.
+Run `$gsd-plan-phase 5` to plan final demo hardening and private-data safety review.
 
 ---
 *State initialized: 2026-04-28*
