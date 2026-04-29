@@ -20,6 +20,7 @@ describe('SCM public artifact safety inventory', () => {
     const required = [
       'api/bootstrap.js',
       'docs/api/worldmonitor.openapi.yaml',
+      'docs/scm-demo-safety.md',
       'public/openapi.yaml',
       'src/config/supplier-risk-archetypes.ts',
       'src/config/scm-route-presets.ts',
@@ -79,5 +80,23 @@ describe('SCM public artifact safety scan', () => {
     for (const pattern of banned) {
       assert.doesNotMatch(openapi, pattern, `public OpenAPI includes private-looking field ${pattern}`);
     }
+  });
+
+  it('documents SCM demo limits and the public-data safety posture', () => {
+    const safetyDoc = readRepoFile('docs/scm-demo-safety.md');
+    const readme = readRepoFile('README.md');
+
+    assert.match(safetyDoc, /Public Data Posture/);
+    assert.match(safetyDoc, /Confidence And Freshness/);
+    assert.match(safetyDoc, /Out Of Scope/);
+    assert.match(safetyDoc, /Future Production Work/);
+    assert.match(safetyDoc, /does not imply access to Chevron-private systems/);
+    assert.match(safetyDoc, /must not ingest, model, display, or imply access to proprietary Chevron supplier rosters/);
+    assert.match(safetyDoc, /npm run build:openapi/);
+    assert.match(safetyDoc, /node scripts\/scm-public-artifact-safety\.mjs/);
+
+    assert.match(readme, /VITE_VARIANT=scm npm run dev/);
+    assert.match(readme, /open-source-data-only energy supply chain demo/);
+    assert.match(readme, /SCM Demo Safety Notes/);
   });
 });

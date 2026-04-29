@@ -71,6 +71,8 @@ npm run dev:commodity  # commodity.worldmonitor.app
 npm run dev:happy      # happy.worldmonitor.app
 ```
 
+The SCM demo variant can be run with `VITE_VARIANT=scm npm run dev`. It is an open-source-data-only energy supply chain demo for supplier risk, route disruption, sanctions/export-control exposure, and energy materials context. Chevron wording is demo framing only; the reusable system must not imply access to proprietary supplier rosters, shipments, contracts, inventories, facility-sensitive details, internal routes, or final compliance decisions. See [SCM Demo Safety Notes](./docs/scm-demo-safety.md).
+
 See the **[self-hosting guide](https://www.worldmonitor.app/docs/getting-started)** for deployment options (Vercel, Docker, static).
 
 ---
