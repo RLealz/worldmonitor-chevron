@@ -13,6 +13,8 @@ import {
   statusForEvent,
   type DisruptionStatus,
 } from '@/shared/disruption-timeline';
+import { SITE_VARIANT } from '@/config/variant';
+import { scmDemoEnergyDisruptions } from '@/services/scm-demo-fallbacks';
 
 const client = new SupplyChainServiceClient(getRpcBaseUrl(), {
   fetch: (...args: Parameters<typeof fetch>) => globalThis.fetch(...args),
@@ -141,6 +143,11 @@ export class EnergyDisruptionsPanel extends Panel {
       // match" rather than as an error. Conflating the two previously
       // showed a retry button on what was a legitimate empty state.
       if (live.upstreamUnavailable) {
+        if (SITE_VARIANT === 'scm') {
+          this.data = scmDemoEnergyDisruptions();
+          this.render();
+          return;
+        }
         this.showError('Energy disruptions log unavailable', () => void this.fetchData());
         return;
       }
@@ -149,6 +156,11 @@ export class EnergyDisruptionsPanel extends Panel {
     } catch (err) {
       if (this.isAbortError(err)) return;
       if (!this.element?.isConnected) return;
+      if (SITE_VARIANT === 'scm') {
+        this.data = scmDemoEnergyDisruptions();
+        this.render();
+        return;
+      }
       this.showError('Energy disruptions log error', () => void this.fetchData());
     }
   }

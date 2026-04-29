@@ -30,6 +30,13 @@ import {
 } from '@/generated/client/worldmonitor/supply_chain/v1/service_client';
 import { createCircuitBreaker } from '@/utils';
 import { getHydratedData } from '@/services/bootstrap';
+import { SITE_VARIANT } from '@/config/variant';
+import {
+  scmDemoChokepointStatus,
+  scmDemoCriticalMinerals,
+  scmDemoShippingRates,
+  scmDemoShippingStress,
+} from '@/services/scm-demo-fallbacks';
 
 export type {
   GetShippingRatesResponse,
@@ -87,11 +94,12 @@ export async function fetchShippingRates(): Promise<GetShippingRatesResponse> {
   if (hydrated?.indices?.length) return hydrated;
 
   try {
-    return await shippingBreaker.execute(async () => {
+    const result = await shippingBreaker.execute(async () => {
       return client.getShippingRates({});
     }, emptyShipping);
+    return SITE_VARIANT === 'scm' && !result.indices.length ? scmDemoShippingRates() : result;
   } catch {
-    return emptyShipping;
+    return SITE_VARIANT === 'scm' ? scmDemoShippingRates() : emptyShipping;
   }
 }
 
@@ -100,11 +108,12 @@ export async function fetchChokepointStatus(): Promise<GetChokepointStatusRespon
   if (hydrated?.chokepoints?.length) return hydrated;
 
   try {
-    return await chokepointBreaker.execute(async () => {
+    const result = await chokepointBreaker.execute(async () => {
       return client.getChokepointStatus({});
     }, emptyChokepoints);
+    return SITE_VARIANT === 'scm' && !result.chokepoints.length ? scmDemoChokepointStatus() : result;
   } catch {
-    return emptyChokepoints;
+    return SITE_VARIANT === 'scm' ? scmDemoChokepointStatus() : emptyChokepoints;
   }
 }
 
@@ -129,11 +138,12 @@ export async function fetchCriticalMinerals(): Promise<GetCriticalMineralsRespon
   if (hydrated?.minerals?.length) return hydrated;
 
   try {
-    return await mineralsBreaker.execute(async () => {
+    const result = await mineralsBreaker.execute(async () => {
       return client.getCriticalMinerals({});
     }, emptyMinerals);
+    return SITE_VARIANT === 'scm' && !result.minerals.length ? scmDemoCriticalMinerals() : result;
   } catch {
-    return emptyMinerals;
+    return SITE_VARIANT === 'scm' ? scmDemoCriticalMinerals() : emptyMinerals;
   }
 }
 
@@ -144,9 +154,10 @@ export async function fetchShippingStress(): Promise<GetShippingStressResponse> 
   if (hydrated?.carriers?.length) return hydrated;
 
   try {
-    return await client.getShippingStress({});
+    const result = await client.getShippingStress({});
+    return SITE_VARIANT === 'scm' && !result.carriers.length ? scmDemoShippingStress() : result;
   } catch {
-    return emptyShippingStress;
+    return SITE_VARIANT === 'scm' ? scmDemoShippingStress() : emptyShippingStress;
   }
 }
 

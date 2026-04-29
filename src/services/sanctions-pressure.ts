@@ -1,4 +1,6 @@
 import { createCircuitBreaker } from '@/utils';
+import { SITE_VARIANT } from '@/config/variant';
+import { scmDemoSanctionsPressure } from '@/services/scm-demo-fallbacks';
 import { getRpcBaseUrl } from '@/services/rpc-client';
 import { premiumFetch } from '@/services/premium-fetch';
 import { getHydratedData } from '@/services/bootstrap';
@@ -160,7 +162,7 @@ export async function fetchSanctionsPressure(): Promise<SanctionsPressureResult>
     return result;
   }
 
-  return breaker.execute(async () => {
+  const result = await breaker.execute(async () => {
     const response = await client.listSanctionsPressure({
       maxItems: 30,
     }, {
@@ -178,6 +180,12 @@ export async function fetchSanctionsPressure(): Promise<SanctionsPressureResult>
   }, emptyResult, {
     shouldCache: (result) => result.totalCount > 0,
   });
+  if (SITE_VARIANT === 'scm' && result.totalCount === 0) {
+    const fallback = toResult(scmDemoSanctionsPressure());
+    latestSanctionsPressureResult = fallback;
+    return fallback;
+  }
+  return result;
 }
 
 export async function lookupSanctionEntity(q: string, maxResults = 5): Promise<LookupSanctionEntityResponse> {

@@ -21,6 +21,8 @@ import {
   setCachedPipelineRegistries,
   type RawPipelineRegistry,
 } from '@/shared/pipeline-registry-store';
+import { SITE_VARIANT } from '@/config/variant';
+import { scmDemoPipelines } from '@/services/scm-demo-fallbacks';
 
 const client = new SupplyChainServiceClient(getRpcBaseUrl(), {
   fetch: (...args: Parameters<typeof fetch>) => globalThis.fetch(...args),
@@ -245,6 +247,11 @@ export class PipelineStatusPanel extends Panel {
       const live = await client.listPipelines({ commodityType: '' });
       if (!this.element?.isConnected) return;
       if (live.upstreamUnavailable || !live.pipelines?.length) {
+        if (SITE_VARIANT === 'scm') {
+          this.data = scmDemoPipelines();
+          this.render();
+          return;
+        }
         this.showError('Pipeline registry unavailable', () => void this.fetchData());
         return;
       }
@@ -261,6 +268,11 @@ export class PipelineStatusPanel extends Panel {
     } catch (err) {
       if (this.isAbortError(err)) return;
       if (!this.element?.isConnected) return;
+      if (SITE_VARIANT === 'scm') {
+        this.data = scmDemoPipelines();
+        this.render();
+        return;
+      }
       this.showError('Pipeline registry error', () => void this.fetchData());
     }
   }

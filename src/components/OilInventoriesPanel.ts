@@ -2,6 +2,7 @@ import { Panel } from './Panel';
 import { t } from '@/services/i18n';
 import { escapeHtml } from '@/utils/sanitize';
 import { toApiUrl } from '@/services/runtime';
+import { SITE_VARIANT } from '@/config/variant';
 
 // SVG chart constants
 const SVG_W = 400;
@@ -31,6 +32,59 @@ interface OilInventoriesData {
   euGas?: EuGasData;
   ieaStocks?: IeaData;
   refinery?: RefineryData;
+}
+
+function buildScmDemoOilInventories(): OilInventoriesData {
+  const weeks = Array.from({ length: 10 }, (_, index) => {
+    const d = new Date();
+    d.setDate(d.getDate() - index * 7);
+    const period = d.toISOString().slice(0, 10);
+    return {
+      period,
+      stocksMb: Math.round((421 + Math.sin(index / 2) * 4 - index * 0.6) * 10) / 10,
+      weeklyChangeMb: Math.round((Math.cos(index / 2) * 2.4) * 10) / 10,
+    };
+  });
+  const gasWeeks = weeks.map((week, index) => ({
+    period: week.period,
+    storBcf: Math.round(3350 + Math.sin(index / 2) * 80 - index * 16),
+    weeklyChangeBcf: Math.round(Math.cos(index / 2) * 35),
+  }));
+  return {
+    crudeWeeks: weeks,
+    spr: {
+      latestStocksMb: 368.4,
+      changeWow: 0.8,
+      weeks: weeks.map((week, index) => ({
+        period: week.period,
+        stocksMb: Math.round((368 + index * 0.4) * 10) / 10,
+      })),
+    },
+    natGasWeeks: gasWeeks,
+    euGas: {
+      fillPct: 71.4,
+      fillPctChange1d: 0.18,
+      trend: 'rebuilding',
+      history: weeks.map((week, index) => ({
+        date: week.period,
+        fillPct: Math.round((68 + index * 0.45 + Math.sin(index / 2) * 0.8) * 10) / 10,
+      })),
+    },
+    ieaStocks: {
+      dataMonth: new Date().toISOString().slice(0, 7),
+      members: [
+        { iso2: 'US', daysOfCover: 128, netExporter: false, belowObligation: false },
+        { iso2: 'JP', daysOfCover: 112, netExporter: false, belowObligation: false },
+        { iso2: 'KR', daysOfCover: 101, netExporter: false, belowObligation: false },
+        { iso2: 'DE', daysOfCover: 94, netExporter: false, belowObligation: false },
+        { iso2: 'NL', daysOfCover: 82, netExporter: false, belowObligation: true },
+      ],
+      europe: { avgDays: 96, minDays: 82, countBelowObligation: 1 },
+      asiaPacific: { avgDays: 106, minDays: 101, countBelowObligation: 0 },
+      northAmerica: { avgDays: 128, minDays: 128, countBelowObligation: 0 },
+    },
+    refinery: { inputsMbpd: 16.1, period: weeks[0]?.period ?? new Date().toISOString().slice(0, 10) },
+  };
 }
 
 interface MergedWeek { period: string; crudeMb: number | null; sprMb: number | null }
@@ -179,6 +233,17 @@ function changeBadge(val: number | undefined, unit: string): string {
   return `<span class="commodity-change ${cls}">${escapeHtml(sign + fmtNum(val))} ${escapeHtml(unit)}</span>`;
 }
 
+function hasOilInventoryContent(data: OilInventoriesData): boolean {
+  return Boolean(
+    data.crudeWeeks?.length
+    || data.spr?.weeks?.length
+    || data.natGasWeeks?.length
+    || data.euGas?.history?.length
+    || data.ieaStocks?.members?.length
+    || data.refinery,
+  );
+}
+
 export class OilInventoriesPanel extends Panel {
   constructor() {
     super({
@@ -193,12 +258,27 @@ export class OilInventoriesPanel extends Panel {
   public async fetchData(): Promise<void> {
     try {
       const resp = await fetch(toApiUrl('/api/economic/v1/get-oil-inventories'));
-      if (!resp.ok) { this.showError('Oil inventory data unavailable', () => void this.fetchData(), 300); return; }
+      if (!resp.ok) {
+        if (SITE_VARIANT === 'scm') {
+          this.render(buildScmDemoOilInventories());
+          return;
+        }
+        this.showError('Oil inventory data unavailable', () => void this.fetchData(), 300);
+        return;
+      }
       const data = (await resp.json()) as OilInventoriesData;
       if (!this.element?.isConnected) return;
+      if (SITE_VARIANT === 'scm' && !hasOilInventoryContent(data)) {
+        this.render(buildScmDemoOilInventories());
+        return;
+      }
       this.render(data);
     } catch {
       if (!this.element?.isConnected) return;
+      if (SITE_VARIANT === 'scm') {
+        this.render(buildScmDemoOilInventories());
+        return;
+      }
       this.showError('Oil inventory data unavailable', () => void this.fetchData(), 300);
     }
   }

@@ -18,6 +18,8 @@ import {
   setCachedFuelShortageRegistry,
   type RawFuelShortageRegistry,
 } from '@/shared/fuel-shortage-registry-store';
+import { SITE_VARIANT } from '@/config/variant';
+import { scmDemoFuelShortages } from '@/services/scm-demo-fallbacks';
 
 const client = new SupplyChainServiceClient(getRpcBaseUrl(), {
   fetch: (...args: Parameters<typeof fetch>) => globalThis.fetch(...args),
@@ -179,6 +181,11 @@ export class FuelShortagePanel extends Panel {
       const live = await client.listFuelShortages({ country: '', product: '', severity: '' });
       if (!this.element?.isConnected) return;
       if (live.upstreamUnavailable || !live.shortages?.length) {
+        if (SITE_VARIANT === 'scm') {
+          this.data = scmDemoFuelShortages();
+          this.render();
+          return;
+        }
         this.showError('Fuel shortage registry unavailable', () => void this.fetchData());
         return;
       }
@@ -194,6 +201,11 @@ export class FuelShortagePanel extends Panel {
     } catch (err) {
       if (this.isAbortError(err)) return;
       if (!this.element?.isConnected) return;
+      if (SITE_VARIANT === 'scm') {
+        this.data = scmDemoFuelShortages();
+        this.render();
+        return;
+      }
       this.showError('Fuel shortage registry error', () => void this.fetchData());
     }
   }

@@ -23,6 +23,8 @@ import {
 import type { MarketData, CryptoData, TokenData } from '@/types';
 import { createCircuitBreaker } from '@/utils/circuit-breaker';
 import { getHydratedData } from '@/services/bootstrap';
+import { SITE_VARIANT } from '@/config/variant';
+import { scmDemoCommodityQuotes, scmDemoCryptoQuotes } from '@/services/scm-demo-fallbacks';
 
 // ---- Client + Circuit Breakers ----
 
@@ -204,8 +206,22 @@ export async function fetchCommodityQuotes(
     };
   });
 
-  if (results.length > 0) options.onBatch?.(results);
-  return { data: results };
+  const finalResults = results.length > 0 || SITE_VARIANT !== 'scm'
+    ? results
+    : scmDemoCommodityQuotes(symbols).quotes.map((q) => {
+        const m = meta.get(q.symbol);
+        return {
+          symbol: q.symbol,
+          name: m?.name ?? q.name,
+          display: m?.display ?? q.display ?? q.symbol,
+          price: q.price,
+          change: q.change,
+          sparkline: q.sparkline?.length > 0 ? q.sparkline : undefined,
+        };
+      });
+
+  if (finalResults.length > 0) options.onBatch?.(finalResults);
+  return { data: finalResults };
 }
 
 // ========================================================================
@@ -252,6 +268,11 @@ export async function fetchCrypto(): Promise<CryptoData[]> {
   if (results.length > 0) {
     lastSuccessfulCrypto = results;
     return results;
+  }
+
+  if (SITE_VARIANT === 'scm') {
+    const mapped = scmDemoCryptoQuotes().quotes.map(toCryptoData).filter(c => c.price > 0);
+    if (mapped.length > 0) return mapped;
   }
 
   return lastSuccessfulCrypto;

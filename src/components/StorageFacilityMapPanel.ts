@@ -17,6 +17,8 @@ import {
   setCachedStorageFacilityRegistry,
   type RawStorageFacilityRegistry,
 } from '@/shared/storage-facility-registry-store';
+import { SITE_VARIANT } from '@/config/variant';
+import { scmDemoStorageFacilities } from '@/services/scm-demo-fallbacks';
 
 const client = new SupplyChainServiceClient(getRpcBaseUrl(), {
   fetch: (...args: Parameters<typeof fetch>) => globalThis.fetch(...args),
@@ -230,6 +232,11 @@ export class StorageFacilityMapPanel extends Panel {
       const live = await client.listStorageFacilities({ facilityType: '' });
       if (!this.element?.isConnected) return;
       if (live.upstreamUnavailable || !live.facilities?.length) {
+        if (SITE_VARIANT === 'scm') {
+          this.data = scmDemoStorageFacilities();
+          this.render();
+          return;
+        }
         this.showError('Storage registry unavailable', () => void this.fetchData());
         return;
       }
@@ -245,6 +252,11 @@ export class StorageFacilityMapPanel extends Panel {
     } catch (err) {
       if (this.isAbortError(err)) return;
       if (!this.element?.isConnected) return;
+      if (SITE_VARIANT === 'scm') {
+        this.data = scmDemoStorageFacilities();
+        this.render();
+        return;
+      }
       this.showError('Storage registry error', () => void this.fetchData());
     }
   }

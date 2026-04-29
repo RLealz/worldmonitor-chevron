@@ -1662,7 +1662,7 @@ export class DataLoaderManager implements AppModule {
   }
 
   async loadDailyMarketBrief(force = false): Promise<void> {
-    if (!hasPremiumAccess()) return;
+    if (!hasPremiumAccess() && SITE_VARIANT !== 'scm') return;
     if (this.ctx.isDestroyed || this.ctx.inFlight.has('dailyMarketBrief')) return;
 
     this.dailyBriefGeneration++;

@@ -28,6 +28,15 @@ import {
 import { createCircuitBreaker } from '@/utils';
 import { isFeatureAvailable } from '../runtime-config';
 import { getHydratedData } from '@/services/bootstrap';
+import { SITE_VARIANT } from '@/config/variant';
+import {
+  scmDemoComtradeFlows,
+  scmDemoCustomsRevenue,
+  scmDemoTariffTrends,
+  scmDemoTradeBarriers,
+  scmDemoTradeFlows,
+  scmDemoTradeRestrictions,
+} from '@/services/scm-demo-fallbacks';
 
 // Re-export types for consumers
 export type { TradeRestriction, TariffDataPoint, EffectiveTariffRate, TradeFlowRecord, TradeBarrier, CustomsRevenueMonth, ComtradeFlowRecord };
@@ -133,51 +142,55 @@ const emptyRevenue: GetCustomsRevenueResponse = { months: [], fetchedAt: '', ups
 const emptyComtrade: ListComtradeFlowsResponse = { flows: [], fetchedAt: '', upstreamUnavailable: false };
 
 export async function fetchTradeRestrictions(countries: string[] = [], limit = 50): Promise<GetTradeRestrictionsResponse> {
-  if (!isFeatureAvailable('wtoTrade')) return emptyRestrictions;
+  if (!isFeatureAvailable('wtoTrade')) return SITE_VARIANT === 'scm' ? scmDemoTradeRestrictions() : emptyRestrictions;
   try {
-    return await restrictionsBreaker.execute(async () => {
+    const result = await restrictionsBreaker.execute(async () => {
       return publicClient.getTradeRestrictions({ countries, limit });
     }, emptyRestrictions, { shouldCache: r => (r.restrictions?.length ?? 0) > 0 });
+    return SITE_VARIANT === 'scm' && !result.restrictions.length ? scmDemoTradeRestrictions() : result;
   } catch {
-    return emptyRestrictions;
+    return SITE_VARIANT === 'scm' ? scmDemoTradeRestrictions() : emptyRestrictions;
   }
 }
 
 export async function fetchTariffTrends(reportingCountry: string, partnerCountry: string, productSector = '', years = 10): Promise<GetTariffTrendsResponse> {
-  if (!isFeatureAvailable('wtoTrade')) return emptyTariffs;
+  if (!isFeatureAvailable('wtoTrade')) return SITE_VARIANT === 'scm' ? scmDemoTariffTrends() : emptyTariffs;
   // /pro live-preview iframe: no Clerk session → guaranteed 401 → breaker
   // would fall through to emptyTariffs anyway. Short-circuit to silence the
   // console noise this path causes on the embedding /pro page.
-  if (IS_EMBEDDED_PREVIEW) return emptyTariffs;
+  if (IS_EMBEDDED_PREVIEW) return SITE_VARIANT === 'scm' ? scmDemoTariffTrends() : emptyTariffs;
   invalidatePremiumBreakersIfIdentityChanged();
   try {
-    return await tariffsBreaker.execute(async () => {
+    const result = await tariffsBreaker.execute(async () => {
       return premiumClient.getTariffTrends({ reportingCountry, partnerCountry, productSector, years });
     }, emptyTariffs, { shouldCache: r => (r.datapoints?.length ?? 0) > 0 });
+    return SITE_VARIANT === 'scm' && !result.datapoints.length ? scmDemoTariffTrends() : result;
   } catch {
-    return emptyTariffs;
+    return SITE_VARIANT === 'scm' ? scmDemoTariffTrends() : emptyTariffs;
   }
 }
 
 export async function fetchTradeFlows(reportingCountry: string, partnerCountry: string, years = 10): Promise<GetTradeFlowsResponse> {
-  if (!isFeatureAvailable('wtoTrade')) return emptyFlows;
+  if (!isFeatureAvailable('wtoTrade')) return SITE_VARIANT === 'scm' ? scmDemoTradeFlows() : emptyFlows;
   try {
-    return await flowsBreaker.execute(async () => {
+    const result = await flowsBreaker.execute(async () => {
       return publicClient.getTradeFlows({ reportingCountry, partnerCountry, years });
     }, emptyFlows, { shouldCache: r => (r.flows?.length ?? 0) > 0 });
+    return SITE_VARIANT === 'scm' && !result.flows.length ? scmDemoTradeFlows() : result;
   } catch {
-    return emptyFlows;
+    return SITE_VARIANT === 'scm' ? scmDemoTradeFlows() : emptyFlows;
   }
 }
 
 export async function fetchTradeBarriers(countries: string[] = [], measureType = '', limit = 50): Promise<GetTradeBarriersResponse> {
-  if (!isFeatureAvailable('wtoTrade')) return emptyBarriers;
+  if (!isFeatureAvailable('wtoTrade')) return SITE_VARIANT === 'scm' ? scmDemoTradeBarriers() : emptyBarriers;
   try {
-    return await barriersBreaker.execute(async () => {
+    const result = await barriersBreaker.execute(async () => {
       return publicClient.getTradeBarriers({ countries, measureType, limit });
     }, emptyBarriers, { shouldCache: r => (r.barriers?.length ?? 0) > 0 });
+    return SITE_VARIANT === 'scm' && !result.barriers.length ? scmDemoTradeBarriers() : result;
   } catch {
-    return emptyBarriers;
+    return SITE_VARIANT === 'scm' ? scmDemoTradeBarriers() : emptyBarriers;
   }
 }
 
@@ -185,23 +198,25 @@ export async function fetchCustomsRevenue(): Promise<GetCustomsRevenueResponse> 
   const hydrated = getHydratedData('customsRevenue') as GetCustomsRevenueResponse | undefined;
   if (hydrated?.months?.length) return hydrated;
   try {
-    return await revenueBreaker.execute(async () => {
+    const result = await revenueBreaker.execute(async () => {
       return publicClient.getCustomsRevenue({});
     }, emptyRevenue, { shouldCache: r => (r.months?.length ?? 0) > 0 });
+    return SITE_VARIANT === 'scm' && !result.months.length ? scmDemoCustomsRevenue() : result;
   } catch {
-    return emptyRevenue;
+    return SITE_VARIANT === 'scm' ? scmDemoCustomsRevenue() : emptyRevenue;
   }
 }
 
 export async function fetchComtradeFlows(): Promise<ListComtradeFlowsResponse> {
   // /pro live-preview iframe: see fetchTariffTrends comment above.
-  if (IS_EMBEDDED_PREVIEW) return emptyComtrade;
+  if (IS_EMBEDDED_PREVIEW) return SITE_VARIANT === 'scm' ? scmDemoComtradeFlows() : emptyComtrade;
   invalidatePremiumBreakersIfIdentityChanged();
   try {
-    return await comtradeBreaker.execute(async () => {
+    const result = await comtradeBreaker.execute(async () => {
       return premiumClient.listComtradeFlows({ reporterCode: '', cmdCode: '', anomaliesOnly: false });
     }, emptyComtrade, { shouldCache: r => (r.flows?.length ?? 0) > 0 });
+    return SITE_VARIANT === 'scm' && !result.flows.length ? scmDemoComtradeFlows() : result;
   } catch {
-    return emptyComtrade;
+    return SITE_VARIANT === 'scm' ? scmDemoComtradeFlows() : emptyComtrade;
   }
 }
