@@ -3,19 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: Phase 5 - Demo Hardening and Safety Review
-status: ready_for_planning
-last_updated: "2026-04-29T01:30:00.000Z"
+status: ready_for_execution
+last_updated: "2026-04-29T02:00:00.000Z"
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 12
+  total_plans: 15
   completed_plans: 12
 ---
 
 # Project State: Chevron SCM Demo Dashboard
 
 **Initialized:** 2026-04-28  
-**Status:** Phase 4 complete; ready for Phase 5 planning
+**Status:** Phase 5 planned; ready for Phase 5 execution
 **Current phase:** Phase 5 - Demo Hardening and Safety Review
 
 ## Project Reference
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-28)
 
 ## Current Focus
 
-Plan final demo hardening and safety review now that the SCM demo shell, supplier-risk signal layer, evidence-first sanctions/trade exposure layer, and route/material workflows are runnable.
+Execute final demo hardening and safety review now that the SCM demo shell, supplier-risk signal layer, evidence-first sanctions/trade exposure layer, route/material workflows, and Phase 5 safety plan are ready.
 
 ## Completed Phases
 
@@ -58,10 +58,11 @@ Plan final demo hardening and safety review now that the SCM demo shell, supplie
 - `.planning/phases/02-supplier-risk-signals/`
 - `.planning/phases/03-sanctions-and-trade-exposure/`
 - `.planning/phases/04-route-and-materials-deepening/`
+- `.planning/phases/05-demo-hardening-and-safety-review/`
 
 ## Next Step
 
-Run `$gsd-plan-phase 5` to plan final demo hardening and private-data safety review.
+Run `$gsd-execute-phase 5` to add public artifact guardrails, demo safety docs, browser/build verification, and milestone closure.
 
 ---
 *State initialized: 2026-04-28*
