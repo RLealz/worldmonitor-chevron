@@ -7,24 +7,24 @@
 
 ### Variant
 
-- [ ] **VAR-01**: User can run a focused SCM demo variant via `VITE_VARIANT` and the app resolves it as a supported variant.
-- [ ] **VAR-02**: User sees an SCM-focused default panel order using existing public-data panels for supply chain, route disruption, sanctions/trade, energy disruptions, materials, pipelines, storage, fuel shortages, and commodities.
-- [ ] **VAR-03**: User sees SCM-focused default map layers for waterways, trade routes, AIS/tanker context where available, commodity ports, pipelines, storage, fuel shortages, minerals, sanctions, weather/natural hazards, fires, outages, and energy infrastructure.
-- [ ] **VAR-04**: User can distinguish the SCM demo variant from the existing full, energy, commodity, finance, tech, and happy variants without losing access to existing variant navigation patterns.
+- [x] **VAR-01**: User can run a focused SCM demo variant via `VITE_VARIANT` and the app resolves it as a supported variant.
+- [x] **VAR-02**: User sees an SCM-focused default panel order using existing public-data panels for supply chain, route disruption, sanctions/trade, energy disruptions, materials, pipelines, storage, fuel shortages, and commodities.
+- [x] **VAR-03**: User sees SCM-focused default map layers for waterways, trade routes, AIS/tanker context where available, commodity ports, pipelines, storage, fuel shortages, minerals, sanctions, weather/natural hazards, fires, outages, and energy infrastructure.
+- [x] **VAR-04**: User can distinguish the SCM demo variant from the existing full, energy, commodity, finance, tech, and happy variants without losing access to existing variant navigation patterns.
 
 ### Framing
 
-- [ ] **FRM-01**: User sees clear demo framing that the SCM dashboard uses public/open-source data only.
-- [ ] **FRM-02**: User is not shown copy that implies access to proprietary Chevron suppliers, contracts, shipments, inventory, internal routes, pricing, facility-sensitive details, or operational secrets.
-- [ ] **FRM-03**: User sees empty/degraded states that distinguish missing public data, stale data, unavailable upstreams, and demo-only assumptions.
-- [ ] **FRM-04**: User-facing SCM labels remain reusable for a generic energy SCM dashboard, with Chevron wording limited to demo framing.
+- [x] **FRM-01**: User sees clear demo framing that the SCM dashboard uses public/open-source data only.
+- [x] **FRM-02**: User is not shown copy that implies access to proprietary Chevron suppliers, contracts, shipments, inventory, internal routes, pricing, facility-sensitive details, or operational secrets.
+- [x] **FRM-03**: User sees empty/degraded states that distinguish missing public data, stale data, unavailable upstreams, and demo-only assumptions.
+- [x] **FRM-04**: User-facing SCM labels remain reusable for a generic energy SCM dashboard, with Chevron wording limited to demo framing.
 
 ### Supplier Risk
 
-- [ ] **SUP-01**: User can view a public-data supplier risk summary derived from country/product exposure, route/chokepoint exposure, sanctions pressure, trade restrictions, materials relevance, and data freshness.
-- [ ] **SUP-02**: User can see source, timestamp, confidence, and reason fields for supplier-risk claims.
-- [ ] **SUP-03**: User can understand when supplier risk is inferred from public signals rather than observed from proprietary supplier data.
-- [ ] **SUP-04**: User can use demo/synthetic supplier archetypes without any real Chevron supplier roster.
+- [x] **SUP-01**: User can view a public-data supplier risk summary derived from country/product exposure, route/chokepoint exposure, sanctions pressure, trade restrictions, materials relevance, and data freshness.
+- [x] **SUP-02**: User can see source, timestamp, confidence, and reason fields for supplier-risk claims.
+- [x] **SUP-03**: User can understand when supplier risk is inferred from public signals rather than observed from proprietary supplier data.
+- [x] **SUP-04**: User can use demo/synthetic supplier archetypes without any real Chevron supplier roster.
 
 ### Routes
 
@@ -49,11 +49,11 @@
 
 ### Verification
 
-- [ ] **VER-01**: Developer can run typecheck successfully after the SCM variant work.
-- [ ] **VER-02**: Developer can run boundary/import lint checks for touched source layers.
-- [ ] **VER-03**: Tests or guardrails prove the SCM variant panel list and map layer defaults are registered correctly.
-- [ ] **VER-04**: Tests or review checks prove no proprietary-looking Chevron SCM data is added to public bootstrap, public docs, analytics, screenshots, or generated OpenAPI as part of the demo.
-- [ ] **VER-05**: At least one browser or E2E smoke path proves the SCM variant loads without blanking the dashboard.
+- [x] **VER-01**: Developer can run typecheck successfully after the SCM variant work.
+- [x] **VER-02**: Developer can run boundary/import lint checks for touched source layers.
+- [x] **VER-03**: Tests or guardrails prove the SCM variant panel list and map layer defaults are registered correctly.
+- [x] **VER-04**: Tests or review checks prove no proprietary-looking Chevron SCM data is added to public bootstrap, public docs, analytics, screenshots, or generated OpenAPI as part of the demo.
+- [x] **VER-05**: At least one browser or E2E smoke path proves the SCM variant loads without blanking the dashboard.
 
 ## v2 Requirements
 
@@ -114,7 +114,7 @@
 | MAT-02 | Phase 4 | Complete |
 | MAT-03 | Phase 4 | Complete |
 | MAT-04 | Phase 4 | Complete |
-| VER-04 | Phase 5 | Pending |
+| VER-04 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 29 total
@@ -123,4 +123,4 @@
 
 ---
 *Requirements defined: 2026-04-28*  
-*Last updated: 2026-04-29 after Phase 4 route/material execution*
+*Last updated: 2026-04-29 after Phase 5 demo hardening and safety review*

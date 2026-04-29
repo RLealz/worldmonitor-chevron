@@ -14,7 +14,7 @@ The roadmap builds a safe public-data SCM demo in five phases. Phase 1 creates t
 - [x] Phase 2 - Supplier Risk Signals completed on 2026-04-28.
 - [x] Phase 3 - Sanctions and Trade Exposure completed on 2026-04-28.
 - [x] Phase 4 - Route and Materials Deepening completed on 2026-04-29.
-- [ ] Phase 5 - Demo Hardening and Safety Review
+- [x] Phase 5 - Demo Hardening and Safety Review completed on 2026-04-29.
 
 | # | Phase | Goal | Requirements | Success Criteria |
 |---|-------|------|--------------|------------------|
@@ -143,6 +143,14 @@ The roadmap builds a safe public-data SCM demo in five phases. Phase 1 creates t
 
 - Use `.planning/codebase/CONCERNS.md` as the review checklist.
 - Add docs only after checking they do not imply internal Chevron access.
+
+**Completed:** 2026-04-29
+
+**Delivered:**
+
+- Public artifact safety scanner and node:test guardrails covering SCM source, docs, planning artifacts, public bootstrap, generated OpenAPI, and public OpenAPI output.
+- SCM demo safety documentation and README framing for public-data-only limits, source categories, degraded states, out-of-scope private data, and future production work.
+- Final verification across SCM regression tests, typecheck, boundary lint, generated artifacts, SCM production build, and browser smoke.
 
 ## Requirement Coverage
 

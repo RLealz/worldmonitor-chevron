@@ -2,21 +2,21 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: Phase 5 - Demo Hardening and Safety Review
-status: ready_for_execution
-last_updated: "2026-04-29T02:00:00.000Z"
+current_phase: v1.0 complete
+status: complete
+last_updated: "2026-04-29T19:10:00.000Z"
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 15
-  completed_plans: 12
+  completed_plans: 15
 ---
 
 # Project State: Chevron SCM Demo Dashboard
 
 **Initialized:** 2026-04-28  
-**Status:** Phase 5 planned; ready for Phase 5 execution
-**Current phase:** Phase 5 - Demo Hardening and Safety Review
+**Status:** v1.0 complete
+**Current phase:** v1.0 complete
 
 ## Project Reference
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-28)
 
 ## Current Focus
 
-Execute final demo hardening and safety review now that the SCM demo shell, supplier-risk signal layer, evidence-first sanctions/trade exposure layer, route/material workflows, and Phase 5 safety plan are ready.
+The v1 public-data SCM demo is complete. Future work should start from v2 workflow or production-readiness requirements only after choosing a new milestone.
 
 ## Completed Phases
 
@@ -34,6 +34,7 @@ Execute final demo hardening and safety review now that the SCM demo shell, supp
 - Phase 2 - Supplier Risk Signals completed on 2026-04-28.
 - Phase 3 - Sanctions and Trade Exposure completed on 2026-04-28.
 - Phase 4 - Route and Materials Deepening completed on 2026-04-29.
+- Phase 5 - Demo Hardening and Safety Review completed on 2026-04-29.
 
 ## Key Decisions
 
@@ -62,7 +63,7 @@ Execute final demo hardening and safety review now that the SCM demo shell, supp
 
 ## Next Step
 
-Run `$gsd-execute-phase 5` to add public artifact guardrails, demo safety docs, browser/build verification, and milestone closure.
+Optional next step: plan a v2 milestone for drill-through workflows, corridor watchlists, scenario overlays, or production-only private ingestion/RBAC/audit hardening.
 
 ---
 *State initialized: 2026-04-28*
