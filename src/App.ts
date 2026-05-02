@@ -11,10 +11,14 @@ import {
   ALL_PANELS,
   VARIANT_DEFAULTS,
   getEffectivePanelConfig,
+  getInitialChevronDemoView,
+  persistChevronDemoView,
   FREE_MAX_PANELS,
   FREE_MAX_SOURCES,
 } from '@/config';
 import { sanitizeLayersForVariant } from '@/config/map-layer-definitions';
+import { DEMO_ACCESS_POLICY } from '@/config/demo-access-policy';
+import { applyDemoBrandingMetadata } from '@/config/demo-branding';
 import type { MapVariant } from '@/config/map-layer-definitions';
 import { initDB, cleanOldSnapshots, isAisConfigured, initAisStream, isOutagesConfigured, disconnectAisStream } from '@/services';
 import { isProUser } from '@/services/widget-store';
@@ -711,6 +715,40 @@ export class App {
       }
     }
 
+    const selectedChevronDemoView = DEMO_ACCESS_POLICY.ungateDemoDashboardUx
+      ? getInitialChevronDemoView()
+      : null;
+    if (selectedChevronDemoView) {
+      const demoPanelKeys = new Set(selectedChevronDemoView.panelKeys);
+      for (const key of Object.keys(panelSettings)) {
+        if (!demoPanelKeys.has(key) && !isDynamicPanel(key) && panelSettings[key]) {
+          panelSettings[key] = { ...panelSettings[key]!, enabled: false };
+        }
+      }
+      selectedChevronDemoView.panelKeys.forEach((key, index) => {
+        const baseConfig = getEffectivePanelConfig(key, SITE_VARIANT);
+        const existingConfig = panelSettings[key];
+        panelSettings[key] = {
+          ...baseConfig,
+          ...existingConfig,
+          name: baseConfig.name,
+          priority: index + 1,
+          enabled: true,
+        };
+      });
+      mapLayers = normalizeExclusiveChoropleths(
+        sanitizeLayersForVariant(
+          { ...(isMobile ? selectedChevronDemoView.mobileMapLayers : selectedChevronDemoView.mapLayers) },
+          currentVariant as MapVariant,
+        ),
+        null,
+      );
+      document.documentElement.dataset.chevronDemoView = selectedChevronDemoView.id;
+      persistChevronDemoView(selectedChevronDemoView.id);
+      saveToStorage(STORAGE_KEYS.panels, panelSettings);
+      saveToStorage(STORAGE_KEYS.mapLayers, mapLayers);
+    }
+
     const initialUrlState: ParsedMapUrlState | null = parseMapUrlState(window.location.search, mapLayers);
     if (initialUrlState.layers) {
       mapLayers = normalizeExclusiveChoropleths(
@@ -862,6 +900,7 @@ export class App {
 
   public async init(): Promise<void> {
     const initStart = performance.now();
+    applyDemoBrandingMetadata();
 
     // WebMCP — register synchronously before any init awaits so agent
     // scanners (isitagentready.com, in-browser agents) find the tools on
@@ -945,9 +984,13 @@ export class App {
 
     // Verify OAuth OTT and hydrate auth session BEFORE any UI subscribes to auth state
     await initAuthState();
-    initAuthAnalytics();
-    installCloudPrefsSync(SITE_VARIANT);
-    this.enforceFreeTierLimits();
+    if (!DEMO_ACCESS_POLICY.suppressUserAccountUx) {
+      initAuthAnalytics();
+      installCloudPrefsSync(SITE_VARIANT);
+    }
+    if (!DEMO_ACCESS_POLICY.ungateDemoDashboardUx) {
+      this.enforceFreeTierLimits();
+    }
 
     let _prevUserId: string | null = null;
     // Track the last-seen PRO entitlement so we can re-fire PRO-gated loaders
@@ -964,7 +1007,9 @@ export class App {
     // watched subscribeAuthState (Clerk-only); Convex Free→Pro transitions
     // never re-fired loadTradePolicy. Same root cause as PR #3409 layer-unlock.
     const firePremiumLoaders = (): void => {
-      this.enforceFreeTierLimits();
+      if (!DEMO_ACCESS_POLICY.ungateDemoDashboardUx) {
+        this.enforceFreeTierLimits();
+      }
       const hadPremium = _prevHadPremium;
       const nowPremium = hasPremiumAccess();
       if (nowPremium && !hadPremium) {
@@ -978,60 +1023,62 @@ export class App {
       }
       _prevHadPremium = nowPremium;
     };
-    this.unsubEntitlementPremiumLoaders = onEntitlementChange(() => firePremiumLoaders());
-    this.unsubFreeTier = subscribeAuthState((session) => {
-      firePremiumLoaders();
+    if (!DEMO_ACCESS_POLICY.suppressCommerceUx) {
+      this.unsubEntitlementPremiumLoaders = onEntitlementChange(() => firePremiumLoaders());
+      this.unsubFreeTier = subscribeAuthState((session) => {
+        firePremiumLoaders();
 
-      const userId = session.user?.id ?? null;
-      if (userId !== null && userId !== _prevUserId) {
-        void cloudPrefsSignIn(userId, SITE_VARIANT);
+        const userId = session.user?.id ?? null;
+        if (userId !== null && userId !== _prevUserId) {
+          void cloudPrefsSignIn(userId, SITE_VARIANT);
 
-        // Rebind Convex watches to the real Clerk userId (was bound to anon UUID at init)
-        destroyEntitlementSubscription();
-        destroySubscriptionWatch();
-        void initEntitlementSubscription(userId);
-        void initSubscriptionWatch(userId);
+          // Rebind Convex watches to the real Clerk userId (was bound to anon UUID at init)
+          destroyEntitlementSubscription();
+          destroySubscriptionWatch();
+          void initEntitlementSubscription(userId);
+          void initSubscriptionWatch(userId);
 
-        // Claim any anonymous purchase made before sign-in (anon → real user migration)
-        const anonId = localStorage.getItem('wm-anon-id');
-        if (anonId) {
-          void (async () => {
-            const [client, api] = await Promise.all([getConvexClient(), getConvexApi()]);
-            if (!client || !api) return;
-            // Wait for ConvexClient WebSocket auth handshake to complete.
-            // Without this, mutations arrive at Convex before the server
-            // has the JWT → "Authentication required" errors.
-            const ready = await waitForConvexAuth(10_000);
-            if (!ready) {
-              console.warn('[billing] claimSubscription skipped — Convex auth not ready');
-              return;
-            }
-            const result = await client.mutation(api.payments.billing.claimSubscription, { anonId });
-            const claimed = result.claimed;
-            const totalClaimed = claimed.subscriptions + claimed.entitlements +
-                                 claimed.customers + claimed.payments;
-            if (totalClaimed > 0) {
-              console.log('[billing] Claimed anon subscription on sign-in:', claimed);
-            }
-            // Always remove after non-throwing completion — mutation is idempotent.
-            // Prevents cold Convex init + mutation on every sign-in for non-purchasers.
-            localStorage.removeItem('wm-anon-id');
-          })().catch((err: unknown) => {
-            console.warn('[billing] claimSubscription failed:', err);
-            // Non-fatal — anon ID preserved for retry on next page load
+          // Claim any anonymous purchase made before sign-in (anon → real user migration)
+          const anonId = localStorage.getItem('wm-anon-id');
+          if (anonId) {
+            void (async () => {
+              const [client, api] = await Promise.all([getConvexClient(), getConvexApi()]);
+              if (!client || !api) return;
+              // Wait for ConvexClient WebSocket auth handshake to complete.
+              // Without this, mutations arrive at Convex before the server
+              // has the JWT → "Authentication required" errors.
+              const ready = await waitForConvexAuth(10_000);
+              if (!ready) {
+                console.warn('[billing] claimSubscription skipped — Convex auth not ready');
+                return;
+              }
+              const result = await client.mutation(api.payments.billing.claimSubscription, { anonId });
+              const claimed = result.claimed;
+              const totalClaimed = claimed.subscriptions + claimed.entitlements +
+                                   claimed.customers + claimed.payments;
+              if (totalClaimed > 0) {
+                console.log('[billing] Claimed anon subscription on sign-in:', claimed);
+              }
+              // Always remove after non-throwing completion — mutation is idempotent.
+              // Prevents cold Convex init + mutation on every sign-in for non-purchasers.
+              localStorage.removeItem('wm-anon-id');
+            })().catch((err: unknown) => {
+              console.warn('[billing] claimSubscription failed:', err);
+              // Non-fatal — anon ID preserved for retry on next page load
+            });
+          }
+          void resumePendingCheckout({
+            openAuth: () => this.state.authModal?.open(),
           });
+        } else if (userId === null && _prevUserId !== null) {
+          destroyEntitlementSubscription();
+          destroySubscriptionWatch();
+          cloudPrefsSignOut();
+          resetEntitlementState();
         }
-        void resumePendingCheckout({
-          openAuth: () => this.state.authModal?.open(),
-        });
-      } else if (userId === null && _prevUserId !== null) {
-        destroyEntitlementSubscription();
-        destroySubscriptionWatch();
-        cloudPrefsSignOut();
-        resetEntitlementState();
-      }
-      _prevUserId = userId;
-    });
+        _prevUserId = userId;
+      });
+    }
 
 
     const geoCoordsPromise: Promise<PreciseCoordinates | null> =
@@ -1044,7 +1091,9 @@ export class App {
 
     // Phase 1: Layout (creates map + panels — they'll find hydrated data)
     this.panelLayout.init();
-    showProBanner(this.state.container);
+    if (!DEMO_ACCESS_POLICY.suppressCommerceUx) {
+      showProBanner(this.state.container);
+    }
     this.updateConnectivityUi();
     window.addEventListener('online', this.handleConnectivityChange);
     window.addEventListener('offline', this.handleConnectivityChange);
@@ -1099,30 +1148,34 @@ export class App {
     correlationEngine.registerAdapter(disasterAdapter);
     this.state.correlationEngine = correlationEngine;
     this.eventHandlers.setupUnifiedSettings();
-    this.eventHandlers.setupAuthWidget();
-    // Capture any ?ref= / ?wm_referral= from the URL into localStorage
-    // and strip from the visible URL. Runs BEFORE the pending-checkout
-    // capture so a /pro?ref=X&checkoutProduct=Y landing preserves both
-    // signals. Pure read of current URL — no-op when neither param is
-    // present.
-    captureReferralFromUrl();
-    // Wire checkout-attempt lifecycle watchers (sign-out clear) before
-    // any capture/resume path runs, so a stale session from a prior
-    // user can't bleed into the current one.
-    initCheckoutWatchers();
-    // Stale attempt records are ignored by loadCheckoutAttempt() via
-    // the 24h TTL — no separate sweep needed. The attempt record's
-    // only consumer (the failure-retry banner) runs handleCheckoutReturn
-    // synchronously during panel-layout mount, which is after the
-    // captureePendingCheckoutIntentFromUrl repopulates it for any /pro
-    // handoff — so no race exists that would want to sweep pre-capture.
-    const pendingCheckout = capturePendingCheckoutIntentFromUrl();
-    if (pendingCheckout) {
-      // Checkout intent from /pro page redirect. Resume immediately if
-      // already authenticated, otherwise the auth callback handles it.
-      void resumePendingCheckout({
-        openAuth: () => this.state.authModal?.open(),
-      });
+    if (!DEMO_ACCESS_POLICY.suppressUserAccountUx) {
+      this.eventHandlers.setupAuthWidget();
+    }
+    if (!DEMO_ACCESS_POLICY.suppressCommerceUx) {
+      // Capture any ?ref= / ?wm_referral= from the URL into localStorage
+      // and strip from the visible URL. Runs BEFORE the pending-checkout
+      // capture so a /pro?ref=X&checkoutProduct=Y landing preserves both
+      // signals. Pure read of current URL — no-op when neither param is
+      // present.
+      captureReferralFromUrl();
+      // Wire checkout-attempt lifecycle watchers (sign-out clear) before
+      // any capture/resume path runs, so a stale session from a prior
+      // user can't bleed into the current one.
+      initCheckoutWatchers();
+      // Stale attempt records are ignored by loadCheckoutAttempt() via
+      // the 24h TTL — no separate sweep needed. The attempt record's
+      // only consumer (the failure-retry banner) runs handleCheckoutReturn
+      // synchronously during panel-layout mount, which is after the
+      // captureePendingCheckoutIntentFromUrl repopulates it for any /pro
+      // handoff — so no race exists that would want to sweep pre-capture.
+      const pendingCheckout = capturePendingCheckoutIntentFromUrl();
+      if (pendingCheckout) {
+        // Checkout intent from /pro page redirect. Resume immediately if
+        // already authenticated, otherwise the auth callback handles it.
+        void resumePendingCheckout({
+          openAuth: () => this.state.authModal?.open(),
+        });
+      }
     }
 
     // Phase 4: SearchManager, MapLayerHandlers, CountryIntel
@@ -1214,6 +1267,7 @@ export class App {
    * Safe to call multiple times (idempotent) — e.g. on auth state changes.
    */
   private enforceFreeTierLimits(): void {
+    if (DEMO_ACCESS_POLICY.ungateDemoDashboardUx) return;
     if (isProUser()) return;
 
     // --- Panel limit ---

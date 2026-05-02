@@ -34,7 +34,7 @@ export default defineConfig({
   webServer: {
     command: 'VITE_E2E=1 npm run dev -- --host 127.0.0.1 --port 4173',
     url: 'http://127.0.0.1:4173/tests/map-harness.html',
-    reuseExistingServer: false,
+    reuseExistingServer: process.env.PLAYWRIGHT_REUSE_SERVER === '1',
     timeout: 120000,
   },
 });

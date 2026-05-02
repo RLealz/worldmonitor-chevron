@@ -36,6 +36,12 @@ import {
   FEEDS,
   INTEL_SOURCES,
 } from '@/config';
+import { DEMO_ACCESS_POLICY } from '@/config/demo-access-policy';
+import {
+  CHEVRON_DEMO_VIEW_STORAGE_KEY,
+  isChevronDemoViewId,
+  persistChevronDemoView,
+} from '@/config/chevron-demo-views';
 import { VARIANT_META } from '@/config/variant-meta';
 import { isDesktopRuntime } from '@/services/runtime';
 import {
@@ -142,7 +148,7 @@ export class EventHandlerManager implements AppModule {
     if (!panelId) return;
     const config = this.ctx.panelSettings[panelId];
     if (!config) return;
-    if (!isProUser()) {
+    if (!DEMO_ACCESS_POLICY.ungateDemoDashboardUx && !isProUser()) {
       const enabledCount = Object.entries(this.ctx.panelSettings).filter(([k, p]) => p.enabled && !k.startsWith('cw-')).length;
       if (enabledCount >= FREE_MAX_PANELS) return;
     }
@@ -459,6 +465,16 @@ export class EventHandlerManager implements AppModule {
           href: link.href,
           isLocalDev,
         });
+      });
+    });
+
+    this.ctx.container.querySelectorAll<HTMLElement>('[data-chevron-demo-view]').forEach(control => {
+      control.addEventListener('click', (e) => {
+        const viewId = control.dataset.chevronDemoView;
+        if (!isChevronDemoViewId(viewId)) return;
+        e.preventDefault();
+        if (localStorage.getItem(CHEVRON_DEMO_VIEW_STORAGE_KEY) === viewId) return;
+        void this.navigateToChevronDemoView(viewId);
       });
     });
 
@@ -906,6 +922,18 @@ export class EventHandlerManager implements AppModule {
     } catch { /* proceed with navigation regardless */ }
   }
 
+  private async navigateToChevronDemoView(viewId: string): Promise<void> {
+    if (!isChevronDemoViewId(viewId)) return;
+    trackVariantSwitch(
+      `chevron-demo:${localStorage.getItem(CHEVRON_DEMO_VIEW_STORAGE_KEY) ?? 'scm'}`,
+      `chevron-demo:${viewId}`,
+    );
+    await this.exitFullscreenForNavigation();
+    persistChevronDemoView(viewId);
+    this.closeMobileMenu();
+    window.location.reload();
+  }
+
   private async navigateToVariant(
     variant: string,
     options: { href?: string; isLocalDev: boolean },
@@ -1025,6 +1053,10 @@ export class EventHandlerManager implements AppModule {
     }
 
     const applyProGate = (isPro: boolean, initial = false) => {
+      if (DEMO_ACCESS_POLICY.ungateDemoDashboardUx) {
+        el.style.display = '';
+        return;
+      }
       el.style.display = isPro ? '' : 'none';
       if (initial && !isPro) trackGateHit('export');
     };
@@ -1055,7 +1087,7 @@ export class EventHandlerManager implements AppModule {
       getDisabledSources: () => this.ctx.disabledSources,
       toggleSource: (name: string) => {
         const reenabling = this.ctx.disabledSources.has(name);
-        if (reenabling && !isProUser()) {
+        if (reenabling && !DEMO_ACCESS_POLICY.ungateDemoDashboardUx && !isProUser()) {
           const allSources = this.getAllSourceNames();
           const currentlyEnabled = allSources.filter(n => !this.ctx.disabledSources.has(n)).length;
           if (currentlyEnabled + 1 > FREE_MAX_SOURCES) {
@@ -1071,7 +1103,7 @@ export class EventHandlerManager implements AppModule {
         saveToStorage(STORAGE_KEYS.disabledFeeds, Array.from(this.ctx.disabledSources));
       },
       setSourcesEnabled: (names: string[], enabled: boolean) => {
-        if (enabled && !isProUser()) {
+        if (enabled && !DEMO_ACCESS_POLICY.ungateDemoDashboardUx && !isProUser()) {
           const allSources = this.getAllSourceNames();
           const currentlyEnabled = allSources.filter(n => !this.ctx.disabledSources.has(n)).length;
           const wouldEnable = names.filter(n => this.ctx.disabledSources.has(n) && allSources.includes(n)).length;
@@ -1115,6 +1147,8 @@ export class EventHandlerManager implements AppModule {
   }
 
   setupAuthWidget(): void {
+    if (DEMO_ACCESS_POLICY.suppressUserAccountUx) return;
+
     const modal = new AuthLauncher();
     this.ctx.authModal = modal;
 
@@ -1149,6 +1183,10 @@ export class EventHandlerManager implements AppModule {
     }
 
     const applyProGate = (isPro: boolean, initial = false) => {
+      if (DEMO_ACCESS_POLICY.ungateDemoDashboardUx) {
+        el.style.display = '';
+        return;
+      }
       el.style.display = isPro ? '' : 'none';
       if (initial && !isPro) trackGateHit('playback');
     };

@@ -398,6 +398,48 @@ canvas,
   opacity: 1;
 }
 
+.variant-switcher--standalone {
+  min-width: 0;
+  max-width: min(58vw, 720px);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.variant-switcher--standalone .variant-option {
+  border: 0;
+  background: transparent;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.variant-switcher--standalone .variant-option .variant-label,
+.variant-switcher--standalone:hover .variant-option .variant-label,
+.variant-switcher--standalone .chevron-demo-view-option .variant-label {
+  max-width: 150px;
+  opacity: 1;
+}
+
+.scm-variant-badge {
+  cursor: default;
+}
+
+.chevron-demo-view-option {
+  font-family: inherit;
+}
+
+.chevron-demo-view-option.active {
+  color: #1a7f37;
+  background: rgba(26, 127, 55, 0.12);
+}
+
+.chevron-demo-view-option .variant-short-label {
+  display: none;
+}
+
+.chevron-demo-view-mobile.active {
+  color: #1a7f37;
+}
+
 .logo {
   font-weight: bold;
   font-size: 14px;
@@ -411,6 +453,51 @@ canvas,
   font-size: 14px;
   letter-spacing: 2px;
   color: var(--accent);
+}
+
+.scm-brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 360px;
+}
+
+.scm-brand-logo {
+  display: block;
+  flex: 0 0 auto;
+  width: auto;
+  object-fit: contain;
+}
+
+.scm-brand-logo-demo {
+  height: 28px;
+  max-width: 96px;
+}
+
+.scm-brand-logo-chevron {
+  height: 28px;
+  max-width: 88px;
+  padding: 2px 4px;
+  background: #fff;
+  border-radius: 3px;
+}
+
+.scm-brand-divider {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+}
+
+.scm-brand-title {
+  overflow: hidden;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .version {
@@ -790,6 +877,22 @@ canvas,
   .credit-link {
     display: none;
   }
+
+  .scm-brand-title {
+    display: none;
+  }
+}
+
+@media (max-width: 1100px) {
+  .scm-brand-logo-demo {
+    height: 24px;
+    max-width: 82px;
+  }
+
+  .scm-brand-logo-chevron {
+    height: 24px;
+    max-width: 78px;
+  }
 }
 
 .search-btn {
@@ -1153,6 +1256,10 @@ canvas,
   height: 28px;
   border-radius: 50%;
 }
+.site-footer-icon--scm {
+  object-fit: contain;
+  border-radius: 4px;
+}
 .site-footer-brand-text {
   display: flex;
   flex-direction: column;
@@ -1189,6 +1296,11 @@ canvas,
   font-size: 10px;
   color: var(--text-dim);
   opacity: 0.6;
+}
+
+[data-product-brand="chevron-scm-demo"] .site-footer-sub {
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 @media (max-width: 768px) {

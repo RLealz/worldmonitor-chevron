@@ -6,7 +6,7 @@
 
 ## Overview
 
-The roadmap builds a safe public-data SCM demo in five phases. Phase 1 creates the focused variant shell and proves the existing dashboard can load as an SCM workspace. Later phases deepen supplier risk, compliance, route/material workflows, and final demo guardrails without introducing proprietary Chevron data.
+The roadmap built a safe public-data SCM demo in seven completed phases. Phase 6 removed user-facing account and product-gating UX so the fork behaves as a standalone Chevron SCM demo product while preserving backend-only protections and public-data safety framing. Phase 7 finished the visible product-shell rebrand so the SCM demo presents as a Chevron-focused demo experience instead of a WorldMonitor fork.
 
 ## Progress
 
@@ -15,6 +15,9 @@ The roadmap builds a safe public-data SCM demo in five phases. Phase 1 creates t
 - [x] Phase 3 - Sanctions and Trade Exposure completed on 2026-04-28.
 - [x] Phase 4 - Route and Materials Deepening completed on 2026-04-29.
 - [x] Phase 5 - Demo Hardening and Safety Review completed on 2026-04-29.
+- [x] Phase 6 - Remove user-facing auth and Pro gating from Chevron demo product completed on 2026-04-30.
+- [x] Phase 7 - Rebrand Chevron SCM demo dashboard shell completed on 2026-05-01.
+- [x] Phase 8 - Add Chevron-branded demo view navigation completed on 2026-05-01.
 
 | # | Phase | Goal | Requirements | Success Criteria |
 |---|-------|------|--------------|------------------|
@@ -23,6 +26,9 @@ The roadmap builds a safe public-data SCM demo in five phases. Phase 1 creates t
 | 3 | Sanctions and Trade Exposure | Make sanctions/export-control exposure evidence-first and connected to SCM context | CMP-01, CMP-02, CMP-03, CMP-04 | 4 |
 | 4 | Route and Materials Deepening | Improve route, port, disruption, material, and energy SCM workflows with public-data constraints | RTE-01, RTE-02, RTE-03, RTE-04, MAT-01, MAT-02, MAT-03, MAT-04 | 5 |
 | 5 | Demo Hardening and Safety Review | Verify no proprietary-looking data leakage and harden the demo for presentation | VER-04 | 5 |
+| 6 | Remove user-facing auth and Pro gating from Chevron demo product | Make the Chevron SCM demo usable without a user account and without visible Pro, subscription, pricing, account, or locked-feature UX | P6-01, P6-02, P6-03, P6-04, P6-05, P6-06, P6-07 | 7 |
+| 7 | Rebrand Chevron SCM demo dashboard shell | Rebrand the SCM demo shell as a standalone Chevron SCM Demo Dashboard while preserving public-data-only and demo-safety framing | P7-01, P7-02, P7-03, P7-04, P7-05, P7-06, P7-07, P7-08 | 8 |
+| 8 | Add Chevron-branded demo view navigation | Restore relevant demo views inside the Chevron product shell as Chevron-branded demo views rather than WorldMonitor variants | P8-01, P8-02, P8-03, P8-04, P8-05, P8-06, P8-07, P8-08 | 6 |
 
 ## Phase 1: Public SCM Variant Shell
 
@@ -155,6 +161,102 @@ The roadmap builds a safe public-data SCM demo in five phases. Phase 1 creates t
 ## Requirement Coverage
 
 All 29 v1 requirements in `.planning/REQUIREMENTS.md` are mapped to exactly one phase.
+
+### Phase 6: Remove user-facing auth and Pro gating from Chevron demo product
+
+**Goal:** Make this WorldMonitor-Chevron fork behave as a standalone Chevron SCM demo product with no user-facing login, signup, Pro, subscription, pricing, account, or locked-feature UX.
+**Requirements**: P6-01, P6-02, P6-03, P6-04, P6-05, P6-06, P6-07
+**Depends on:** Phase 5
+**Plans:** 3 plans
+
+**Planning constraints:**
+
+1. Apply across the Chevron demo product experience, not only one panel.
+2. Remove or suppress visible login/sign up prompts, account menus, user profile UI, user DB language, subscription/pricing copy, Pro announcements, upsell banners, locked-feature notices, and blocked-feature states.
+3. Keep technical/server-side auth and secrets required for the product to work, including API keys, Redis credentials, upstream public-data credentials, CORS/API protection, and backend-only authorization guardrails.
+4. Keep the dashboard usable without a user account.
+5. Preserve public/open-source-data-only disclaimers and Chevron demo safety language.
+6. Do not introduce or imply access to proprietary Chevron supplier rosters, contracts, shipments, inventory, facility-sensitive routes, pricing, or operational secrets.
+7. Prefer deleting or hiding only product-gating/user-account surfaces; do not break data loading, public API seeding, or operational panels.
+
+Plans:
+- [x] 06-01 - Suppress Account And Commerce UX In The SCM Shell
+- [x] 06-02 - Ungate SCM Panels, Layers, And Settings UX
+- [x] 06-03 - Add SCM No-Gating Guardrails And Browser Smoke
+
+**Completed:** 2026-04-30
+
+**Delivered:**
+
+- SCM-only demo access policy that suppresses user-account and commerce UX without changing backend/server protections.
+- Standalone SCM dashboard shell with no visible login, signup, account, profile, Pro, pricing, subscription, checkout, billing, upgrade, locked-feature, or unlock-feature surfaces.
+- SCM panel, map, settings, add-panel, export/playback, and free-tier paths usable without a user account.
+- Static and browser guardrails covering SCM no-gating behavior while preserving public-data-only and Chevron demo safety framing.
+
+### Phase 7: Rebrand Chevron SCM demo dashboard shell
+
+**Goal:** Rebrand the SCM/Chevron demo product shell as a standalone Chevron SCM Demo Dashboard by updating visible naming, browser-visible metadata, loading states, settings/menu surfaces, footer/mobile shell references, and docs/demo references while removing WorldMonitor/GitHub/author promotional surfaces from the SCM demo UI.
+**Requirements**: P7-01, P7-02, P7-03, P7-04, P7-05, P7-06, P7-07, P7-08
+**Depends on:** Phase 6
+**Plans:** 3 plans
+
+**Planning constraints:**
+
+- Keep Chevron-specific wording demo/framing-only and avoid implying Chevron endorsement beyond approved demo context.
+- Preserve public/open-source-data-only disclaimers and the existing Chevron demo safety language.
+- Do not introduce or imply access to proprietary Chevron supplier rosters, contracts, shipments, inventory, facility-sensitive routes, pricing, or operational secrets.
+- Keep non-SCM variants' existing branding unless a shared component must be made variant-aware.
+- Prefer variant-scoped branding helpers/config over scattered hardcoded checks.
+- Add the approved demo logo and the Chevron logo to the SCM demo header/shell where appropriate.
+
+**Success criteria:**
+
+1. SCM-visible dashboard naming no longer presents WorldMonitor-oriented product naming.
+2. Header/shell renders the approved demo logo and Chevron logo in the SCM demo experience.
+3. SCM page title, metadata, loading states, settings shell, footer/mobile menu, and docs/demo references use Chevron SCM demo framing.
+4. Visible GitHub stars, promotional GitHub links/badges, author credit, and personal attribution surfaces are removed from the SCM demo UI.
+5. Public/open-source-data-only disclaimers and demo safety language remain visible where relevant.
+6. Copy does not imply Chevron endorsement or private/proprietary SCM data access.
+7. Non-SCM variants keep their existing branding behavior.
+8. Tests or browser smoke checks prove old promo/attribution/name surfaces are absent and both logos render.
+
+Plans:
+- [x] 07-01 - Add Variant-Scoped Chevron SCM Brand System
+- [x] 07-02 - Rebrand Metadata Settings Loading And Demo Docs
+- [x] 07-03 - Add Branding Regression And Browser Smoke Guardrails
+
+### Phase 8: Add Chevron-branded demo view navigation
+
+**Goal:** Restore access to the dashboard's useful demo views from within the Chevron product shell, presenting them as Chevron-branded demo views rather than WorldMonitor variants.
+**Requirements**: P8-01, P8-02, P8-03, P8-04, P8-05, P8-06, P8-07, P8-08
+**Depends on:** Phase 7
+**Plans:** 3 plans
+
+**Planning constraints:**
+
+- Add a Chevron-branded view switcher/navigation in the standalone Chevron SCM demo shell.
+- Include relevant views such as SCM, Energy, Materials/Commodities, Trade/Sanctions, Routes/Maritime, and Finance/Markets if supported by existing variants/panels.
+- Do not show WorldMonitor branding, GitHub stars, author credit, personal attribution, Pro/upgrade/account UX, or WorldMonitor promo links in Chevron demo views.
+- Keep non-Chevron/non-SCM variants' existing branding behavior.
+- Prefer reusing existing variants, panels, services, APIs, map layers, and layout state before creating new variants.
+- If existing variants are reused, wrap their navigation labels and shell branding in Chevron demo copy.
+- Preserve public/open-source-data-only disclaimers and Chevron demo safety language.
+- Do not imply Chevron endorsement beyond demo framing.
+- Do not introduce or imply access to proprietary Chevron supplier rosters, contracts, shipments, inventory, facility-sensitive routes, pricing, or operational secrets.
+
+**Success criteria:**
+
+1. A Chevron demo operator can navigate among selected demo views from inside the Chevron product shell.
+2. Selected demo views remain visibly Chevron-branded and do not expose the old WorldMonitor variant-switching experience.
+3. WorldMonitor branding, GitHub stars, author credit, personal attribution, Pro/upgrade/account UX, and WorldMonitor promo links are absent from Chevron demo views.
+4. Non-Chevron/non-SCM variants keep their existing branding behavior.
+5. Public/open-source-data-only disclaimers and Chevron demo safety language remain visible where relevant.
+6. Static and/or Playwright smoke tests prove Chevron demo users can access the selected views and that the shell remains Chevron-branded.
+
+Plans:
+- [ ] 08-01 - Define Chevron Demo View Model And Presets
+- [ ] 08-02 - Wire Chevron Demo View Navigation Into The Shell
+- [ ] 08-03 - Add Chevron Demo View Guardrails And Browser Smoke
 
 ---
 *Roadmap created: 2026-04-28*

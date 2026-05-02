@@ -98,7 +98,11 @@ import {
   SITE_VARIANT,
   ALL_PANELS,
   VARIANT_DEFAULTS,
+  CHEVRON_DEMO_VIEWS,
+  getInitialChevronDemoView,
 } from '@/config';
+import { DEMO_ACCESS_POLICY } from '@/config/demo-access-policy';
+import { DEMO_BRANDING } from '@/config/demo-branding';
 import { BETA_MODE } from '@/config/beta';
 import { t } from '@/services/i18n';
 import { getCurrentTheme } from '@/utils';
@@ -192,48 +196,51 @@ export class PanelLayoutManager implements AppModule {
     //      subscription_id/status URL params and cleans them.
     //   2. Dodo overlay success — setTimeout(reload) with no URL params;
     //      we stash a session flag before the reload and consume it here.
-    const returnResult = handleCheckoutReturn();
-    const returnedFromOverlay = consumePostCheckoutFlag();
-    const returnedFromCheckout = returnResult.kind === 'success' || returnedFromOverlay;
-    if (returnedFromCheckout) {
-      // Full-page return cleared its URL params; belt-and-braces clear
-      // of the attempt record here catches the success path where the
-      // overlay handler never ran (direct Dodo redirect).
-      clearCheckoutAttempt('success');
-      // waitForEntitlement: true keeps the banner mounted across the
-      // entitlement-watcher reload (post-PR-4 the watcher is the single
-      // reload source). If the user is already entitled on mount the
-      // banner goes straight to the "active" state; otherwise it waits
-      // up to 30s for the transition before surfacing a manual-refresh
-      // CTA. `email` is read from auth-state (authoritative on the main
-      // app) and masked in the banner before rendering to keep the raw
-      // address out of screenshots / screen-shares of the banner.
-      showCheckoutSuccess({
+    let returnedFromCheckout = false;
+    if (!DEMO_ACCESS_POLICY.suppressCommerceUx) {
+      const returnResult = handleCheckoutReturn();
+      const returnedFromOverlay = consumePostCheckoutFlag();
+      returnedFromCheckout = returnResult.kind === 'success' || returnedFromOverlay;
+      if (returnedFromCheckout) {
+        // Full-page return cleared its URL params; belt-and-braces clear
+        // of the attempt record here catches the success path where the
+        // overlay handler never ran (direct Dodo redirect).
+        clearCheckoutAttempt('success');
+        // waitForEntitlement: true keeps the banner mounted across the
+        // entitlement-watcher reload (post-PR-4 the watcher is the single
+        // reload source). If the user is already entitled on mount the
+        // banner goes straight to the "active" state; otherwise it waits
+        // up to 30s for the transition before surfacing a manual-refresh
+        // CTA. `email` is read from auth-state (authoritative on the main
+        // app) and masked in the banner before rendering to keep the raw
+        // address out of screenshots / screen-shares of the banner.
+        showCheckoutSuccess({
+          waitForEntitlement: true,
+          email: getAuthState().user?.email ?? null,
+        });
+      } else if (returnResult.kind === 'failed') {
+        showCheckoutFailureBanner(returnResult.rawStatus);
+      }
+
+      const userId = getUserId();
+      if (userId) {
+        initEntitlementSubscription(userId).catch(() => {});
+        initSubscriptionWatch(userId).catch(() => {});
+        this.unsubscribePaymentFailureBanner = initPaymentFailureBanner();
+      }
+
+      // Overlay success fires BEFORE the entitlement-watcher reload. The
+      // banner stays mounted through the reload via waitForEntitlement so
+      // the user sees visual continuity from "Payment received!" through
+      // "Premium activated" without a blank intermediate state. Read the
+      // email lazily at fire-time (not at register-time) so a just-signed-
+      // in buyer who completes checkout in the same session still sees
+      // the receipt acknowledgement.
+      initCheckoutOverlay(() => showCheckoutSuccess({
         waitForEntitlement: true,
         email: getAuthState().user?.email ?? null,
-      });
-    } else if (returnResult.kind === 'failed') {
-      showCheckoutFailureBanner(returnResult.rawStatus);
+      }));
     }
-
-    const userId = getUserId();
-    if (userId) {
-      initEntitlementSubscription(userId).catch(() => {});
-      initSubscriptionWatch(userId).catch(() => {});
-      this.unsubscribePaymentFailureBanner = initPaymentFailureBanner();
-    }
-
-    // Overlay success fires BEFORE the entitlement-watcher reload. The
-    // banner stays mounted through the reload via waitForEntitlement so
-    // the user sees visual continuity from "Payment received!" through
-    // "Premium activated" without a blank intermediate state. Read the
-    // email lazily at fire-time (not at register-time) so a just-signed-
-    // in buyer who completes checkout in the same session still sees
-    // the receipt acknowledgement.
-    initCheckoutOverlay(() => showCheckoutSuccess({
-      waitForEntitlement: true,
-      email: getAuthState().user?.email ?? null,
-    }));
 
     // Reload only on a free→pro transition. Legacy-pro users whose first
     // snapshot is already pro (lastEntitled === null) must not trigger a
@@ -283,7 +290,9 @@ export class PanelLayoutManager implements AppModule {
     this.unsubscribeAuth = subscribeAuthState((state) => {
       this.updatePanelGating(state);
     });
-    this.fetchGitHubStars();
+    if (!DEMO_BRANDING.suppressProductPromoSurfaces) {
+      this.fetchGitHubStars();
+    }
 
     // Handle analyst action chip "Create chart widget →" click
     this.boundWidgetCreatorHandler = ((e: CustomEvent<{ initialMessage?: string }>) => {
@@ -350,6 +359,13 @@ export class PanelLayoutManager implements AppModule {
 
   /** Reactively update premium panel gating based on auth state. */
   private updatePanelGating(state: AuthSession): void {
+    if (DEMO_ACCESS_POLICY.ungateDemoDashboardUx) {
+      for (const panel of Object.values(this.ctx.panels)) {
+        (panel as Panel).unlockPanel();
+      }
+      return;
+    }
+
     for (const [key, panel] of Object.entries(this.ctx.panels)) {
       const isPremium = WEB_PREMIUM_PANELS.has(key);
       let reason = getPanelGateReason(state, isPremium);
@@ -421,6 +437,72 @@ export class PanelLayoutManager implements AppModule {
   }
 
   renderLayout(): void {
+    const brand = DEMO_BRANDING;
+    const isStandaloneDemo = brand.isStandaloneDemo;
+    const brandName = escapeHtml(brand.productName);
+    const brandShortName = escapeHtml(brand.shortName);
+    const brandMobileName = escapeHtml(brand.mobileName);
+    const brandVariantLabel = escapeHtml(brand.variantLabel);
+    const brandSubline = escapeHtml(brand.footerSubline);
+    const demoLogoAlt = escapeHtml(brand.demoLogoAlt);
+    const partnerLogoAlt = escapeHtml(brand.partnerLogoAlt);
+    const activeChevronDemoView = isStandaloneDemo ? getInitialChevronDemoView() : null;
+    const chevronDemoViewOptionsHtml = activeChevronDemoView
+      ? CHEVRON_DEMO_VIEWS.map(view => {
+        const active = view.id === activeChevronDemoView.id;
+        const label = escapeHtml(view.label);
+        const shortLabel = escapeHtml(view.shortLabel);
+        const description = escapeHtml(view.description);
+        return `<button type="button"
+                  class="variant-option chevron-demo-view-option ${active ? 'active scm-variant-badge' : ''}"
+                  ${view.id === 'scm' ? 'data-variant="scm"' : ''}
+                  data-chevron-demo-view="${view.id}"
+                  aria-pressed="${active ? 'true' : 'false'}"
+                  title="${label} - ${description}">
+                  <span class="variant-label">${label}</span>
+                  <span class="variant-short-label">${shortLabel}</span>
+                </button>`;
+      }).join('')
+      : '';
+    const chevronMobileViewOptionsHtml = activeChevronDemoView
+      ? CHEVRON_DEMO_VIEWS.map(view => {
+        const active = view.id === activeChevronDemoView.id;
+        const label = escapeHtml(view.label);
+        const description = escapeHtml(view.description);
+        return `<button class="mobile-menu-item chevron-demo-view-mobile ${active ? 'active' : ''}"
+                  data-chevron-demo-view="${view.id}"
+                  title="${description}">
+            <span class="mobile-menu-item-label">${label}</span>
+            ${active ? '<span class="mobile-menu-check">✓</span>' : ''}
+          </button>`;
+      }).join('')
+      : '';
+    const shellBrandHtml = isStandaloneDemo
+      ? `<div class="scm-brand-lockup" aria-label="${brandName}">
+          <img src="${brand.demoLogoSrc}" alt="${demoLogoAlt}" class="scm-brand-logo scm-brand-logo-demo" />
+          <span class="scm-brand-divider" aria-hidden="true"></span>
+          <img src="${brand.partnerLogoSrc}" alt="${partnerLogoAlt}" class="scm-brand-logo scm-brand-logo-chevron" />
+          <span class="scm-brand-title">${brandShortName}</span>
+        </div>`
+      : '<span class="logo">MONITOR</span><span class="logo-mobile">World Monitor</span>';
+    const promoLinksHtml = isStandaloneDemo
+      ? ''
+      : `<a href="https://x.com/eliehabib" target="_blank" rel="noopener" class="credit-link">
+            <svg class="x-logo" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            <span class="credit-text">@eliehabib</span>
+          </a>
+          <a href="https://github.com/koala73/worldmonitor" target="_blank" rel="noopener" class="github-link" title="${t('header.viewOnGitHub')}">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            <span class="github-stars" id="githubStars"></span>
+          </a>`;
+    const scmFooterLinksHtml = `
+          <a href="/docs/scm-demo-safety" target="_blank" rel="noopener">Safety</a>
+          <a href="/docs/scm-api-data-index" target="_blank" rel="noopener">Data index</a>`;
+    const standardFooterLinksHtml = `
+          ${DEMO_ACCESS_POLICY.suppressCommerceUx ? '' : `<a href="${this.ctx.isDesktopApp ? 'https://worldmonitor.app/pro' : 'https://www.worldmonitor.app/pro'}" target="_blank" rel="noopener">Pro</a>`}
+          <a href="${this.ctx.isDesktopApp ? 'https://worldmonitor.app/blog/' : 'https://www.worldmonitor.app/blog/'}" target="_blank" rel="noopener">Blog</a>
+          <a href="${this.ctx.isDesktopApp ? 'https://worldmonitor.app/docs' : 'https://www.worldmonitor.app/docs'}" target="_blank" rel="noopener">Docs</a>
+          <a href="https://status.worldmonitor.app/" target="_blank" rel="noopener">Status</a>`;
     this.ctx.container.innerHTML = `
       ${this.ctx.isDesktopApp ? '<div class="tauri-titlebar" data-tauri-drag-region></div>' : ''}
       <div class="header">
@@ -428,11 +510,14 @@ export class PanelLayoutManager implements AppModule {
           <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
-          <div class="variant-switcher">${(() => {
+          <div class="variant-switcher ${isStandaloneDemo ? 'variant-switcher--standalone' : ''}">${(() => {
         const local = this.ctx.isDesktopApp || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
         const inIframe = window.self !== window.top;
         const vHref = (v: string, prod: string) => local || SITE_VARIANT === v ? '#' : prod;
         const vTarget = (v: string) => !local && SITE_VARIANT !== v && inIframe ? 'target="_blank" rel="noopener"' : '';
+        if (isStandaloneDemo) {
+          return chevronDemoViewOptionsHtml;
+        }
         return `
             <a href="${vHref('full', 'https://worldmonitor.app')}"
                class="variant-option ${SITE_VARIANT === 'full' ? 'active' : ''}"
@@ -483,9 +568,9 @@ export class PanelLayoutManager implements AppModule {
                class="variant-option ${SITE_VARIANT === 'scm' ? 'active' : ''}"
                data-variant="scm"
                ${vTarget('scm')}
-               title="SCM Demo${SITE_VARIANT === 'scm' ? ` ${t('common.currentVariant')}` : ''}">
+               title="${brandVariantLabel}${SITE_VARIANT === 'scm' ? ` ${t('common.currentVariant')}` : ''}">
               <span class="variant-icon">🚚</span>
-              <span class="variant-label">SCM Demo</span>
+              <span class="variant-label">${brandVariantLabel}</span>
             </a>
             <span class="variant-divider"></span>
             <a href="${vHref('happy', 'https://happy.worldmonitor.app')}"
@@ -497,15 +582,8 @@ export class PanelLayoutManager implements AppModule {
               <span class="variant-label">Good News</span>
             </a>`;
       })()}</div>
-          <span class="logo">MONITOR</span><span class="logo-mobile">World Monitor</span><span class="version">v${__APP_VERSION__}</span>${BETA_MODE ? '<span class="beta-badge">BETA</span>' : ''}
-          <a href="https://x.com/eliehabib" target="_blank" rel="noopener" class="credit-link">
-            <svg class="x-logo" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-            <span class="credit-text">@eliehabib</span>
-          </a>
-          <a href="https://github.com/koala73/worldmonitor" target="_blank" rel="noopener" class="github-link" title="${t('header.viewOnGitHub')}">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-            <span class="github-stars" id="githubStars"></span>
-          </a>
+          ${shellBrandHtml}<span class="version">v${__APP_VERSION__}</span>${BETA_MODE ? '<span class="beta-badge">BETA</span>' : ''}
+          ${promoLinksHtml}
           <button class="mobile-settings-btn" id="mobileSettingsBtn" title="${t('header.settings')}">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </button>
@@ -541,20 +619,21 @@ export class PanelLayoutManager implements AppModule {
       <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
       <nav class="mobile-menu" id="mobileMenu">
         <div class="mobile-menu-header">
-          <span class="mobile-menu-title">WORLD MONITOR</span>
+          <span class="mobile-menu-title">${brandMobileName}</span>
           <button class="mobile-menu-close" id="mobileMenuClose" aria-label="Close menu">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
         <div class="mobile-menu-divider"></div>
         ${(() => {
+        if (isStandaloneDemo) return chevronMobileViewOptionsHtml;
         const variants = [
           { key: 'full', icon: '🌍', label: t('header.world') },
           { key: 'tech', icon: '💻', label: t('header.tech') },
           { key: 'finance', icon: '📈', label: t('header.finance') },
           { key: 'commodity', icon: '⛏️', label: t('header.commodity') },
           { key: 'energy', icon: '⚡', label: t('header.energy') },
-          { key: 'scm', icon: '🚚', label: 'SCM Demo' },
+          { key: 'scm', icon: '🚚', label: brandVariantLabel },
           { key: 'happy', icon: '☀️', label: 'Good News' },
         ];
         return variants.map(v =>
@@ -580,16 +659,13 @@ export class PanelLayoutManager implements AppModule {
           <span class="mobile-menu-item-icon">${getCurrentTheme() === 'dark' ? '☀️' : '🌙'}</span>
           <span class="mobile-menu-item-label">${getCurrentTheme() === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
         </button>
-        <a class="mobile-menu-item" href="https://x.com/eliehabib" target="_blank" rel="noopener">
+        ${isStandaloneDemo ? '' : `<a class="mobile-menu-item" href="https://x.com/eliehabib" target="_blank" rel="noopener">
           <span class="mobile-menu-item-icon"><svg class="x-logo" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></span>
           <span class="mobile-menu-item-label">@eliehabib</span>
-        </a>
+        </a>`}
         <div class="mobile-menu-divider"></div>
         <div class="mobile-menu-footer-links">
-          <a href="${this.ctx.isDesktopApp ? 'https://worldmonitor.app/pro' : 'https://www.worldmonitor.app/pro'}" target="_blank" rel="noopener">Pro</a>
-          <a href="${this.ctx.isDesktopApp ? 'https://worldmonitor.app/blog/' : 'https://www.worldmonitor.app/blog/'}" target="_blank" rel="noopener">Blog</a>
-          <a href="${this.ctx.isDesktopApp ? 'https://worldmonitor.app/docs' : 'https://www.worldmonitor.app/docs'}" target="_blank" rel="noopener">Docs</a>
-          <a href="https://status.worldmonitor.app/" target="_blank" rel="noopener">Status</a>
+          ${isStandaloneDemo ? scmFooterLinksHtml : standardFooterLinksHtml}
         </div>
         <div class="mobile-menu-version">v${__APP_VERSION__}</div>
       </nav>
@@ -646,23 +722,20 @@ export class PanelLayoutManager implements AppModule {
       </div>
       <footer class="site-footer">
         <div class="site-footer-brand">
-          <img src="/favico/favicon-32x32.png" alt="" width="28" height="28" class="site-footer-icon" />
+          <img src="${isStandaloneDemo ? brand.demoLogoSrc : '/favico/favicon-32x32.png'}" alt="${isStandaloneDemo ? demoLogoAlt : ''}" width="28" height="28" class="site-footer-icon ${isStandaloneDemo ? 'site-footer-icon--scm' : ''}" />
           <div class="site-footer-brand-text">
-            <span class="site-footer-name">WORLD MONITOR</span>
-            <span class="site-footer-sub">v${__APP_VERSION__} &middot; <a href="https://x.com/eliehabib" target="_blank" rel="noopener" class="site-footer-credit">@eliehabib</a></span>
+            <span class="site-footer-name">${brandName}</span>
+            <span class="site-footer-sub">${isStandaloneDemo ? brandSubline : `v${__APP_VERSION__} &middot; <a href="https://x.com/eliehabib" target="_blank" rel="noopener" class="site-footer-credit">@eliehabib</a>`}</span>
           </div>
         </div>
         <nav>
-          <a href="${this.ctx.isDesktopApp ? 'https://worldmonitor.app/pro' : 'https://www.worldmonitor.app/pro'}" target="_blank" rel="noopener">Pro</a>
-          <a href="${this.ctx.isDesktopApp ? 'https://worldmonitor.app/blog/' : 'https://www.worldmonitor.app/blog/'}" target="_blank" rel="noopener">Blog</a>
-          <a href="${this.ctx.isDesktopApp ? 'https://worldmonitor.app/docs' : 'https://www.worldmonitor.app/docs'}" target="_blank" rel="noopener">Docs</a>
-          <a href="https://status.worldmonitor.app/" target="_blank" rel="noopener">Status</a>
+          ${isStandaloneDemo ? scmFooterLinksHtml : `${standardFooterLinksHtml}
           <a href="https://github.com/koala73/worldmonitor" target="_blank" rel="noopener">GitHub</a>
           <a href="https://discord.gg/re63kWKxaz" target="_blank" rel="noopener">Discord</a>
-          <a href="https://x.com/worldmonitorai" target="_blank" rel="noopener">X</a>
-          ${this.ctx.isDesktopApp ? '' : `<span id="footerDownloadMount"></span>`}
+          <a href="https://x.com/worldmonitorai" target="_blank" rel="noopener">X</a>`}
+          ${this.ctx.isDesktopApp || isStandaloneDemo ? '' : `<span id="footerDownloadMount"></span>`}
         </nav>
-        <span class="site-footer-copy">&copy; ${new Date().getFullYear()} World Monitor</span>
+        <span class="site-footer-copy">&copy; ${new Date().getFullYear()} ${brandName}</span>
       </footer>
     `;
 
@@ -810,6 +883,9 @@ export class PanelLayoutManager implements AppModule {
   }
 
   private shouldCreatePanel(key: string): boolean {
+    if (DEMO_ACCESS_POLICY.ungateDemoDashboardUx) {
+      return new Set(VARIANT_DEFAULTS[SITE_VARIANT] ?? []).has(key);
+    }
     return Object.prototype.hasOwnProperty.call(this.ctx.panelSettings, key);
   }
 
@@ -972,41 +1048,45 @@ export class PanelLayoutManager implements AppModule {
 
     this.createPanel('gdelt-intel', () => new GdeltIntelPanel());
 
-    import('@/components/DeductionPanel').then(({ DeductionPanel }) => {
-      const deductionPanel = new DeductionPanel(() => this.ctx.allNews);
-      this.ctx.panels['deduction'] = deductionPanel;
-      const el = deductionPanel.getElement();
-      this.makeDraggable(el, 'deduction');
-      const grid = document.getElementById('panelsGrid');
-      if (grid) {
-        const gdeltEl = this.ctx.panels['gdelt-intel']?.getElement();
-        if (gdeltEl?.parentNode === grid && gdeltEl.nextSibling) {
-          grid.insertBefore(el, gdeltEl.nextSibling);
-        } else {
-          grid.appendChild(el);
+    if (this.shouldCreatePanel('deduction')) {
+      import('@/components/DeductionPanel').then(({ DeductionPanel }) => {
+        const deductionPanel = new DeductionPanel(() => this.ctx.allNews);
+        this.ctx.panels['deduction'] = deductionPanel;
+        const el = deductionPanel.getElement();
+        this.makeDraggable(el, 'deduction');
+        const grid = document.getElementById('panelsGrid');
+        if (grid) {
+          const gdeltEl = this.ctx.panels['gdelt-intel']?.getElement();
+          if (gdeltEl?.parentNode === grid && gdeltEl.nextSibling) {
+            grid.insertBefore(el, gdeltEl.nextSibling);
+          } else {
+            grid.appendChild(el);
+          }
         }
-      }
-      this.applyPanelSettings();
-      this.updatePanelGating(getAuthState());
-    });
+        this.applyPanelSettings();
+        this.updatePanelGating(getAuthState());
+      });
+    }
 
-    import('@/components/RegionalIntelligenceBoard').then(({ RegionalIntelligenceBoard }) => {
-      const regionalBoard = new RegionalIntelligenceBoard();
-      this.ctx.panels['regional-intelligence'] = regionalBoard;
-      const el = regionalBoard.getElement();
-      this.makeDraggable(el, 'regional-intelligence');
-      const grid = document.getElementById('panelsGrid');
-      if (grid) {
-        const deductionEl = this.ctx.panels['deduction']?.getElement();
-        if (deductionEl?.parentNode === grid && deductionEl.nextSibling) {
-          grid.insertBefore(el, deductionEl.nextSibling);
-        } else {
-          grid.appendChild(el);
+    if (this.shouldCreatePanel('regional-intelligence')) {
+      import('@/components/RegionalIntelligenceBoard').then(({ RegionalIntelligenceBoard }) => {
+        const regionalBoard = new RegionalIntelligenceBoard();
+        this.ctx.panels['regional-intelligence'] = regionalBoard;
+        const el = regionalBoard.getElement();
+        this.makeDraggable(el, 'regional-intelligence');
+        const grid = document.getElementById('panelsGrid');
+        if (grid) {
+          const deductionEl = this.ctx.panels['deduction']?.getElement();
+          if (deductionEl?.parentNode === grid && deductionEl.nextSibling) {
+            grid.insertBefore(el, deductionEl.nextSibling);
+          } else {
+            grid.appendChild(el);
+          }
         }
-      }
-      this.applyPanelSettings();
-      this.updatePanelGating(getAuthState());
-    });
+        this.applyPanelSettings();
+        this.updatePanelGating(getAuthState());
+      });
+    }
 
     if (this.shouldCreatePanel('cii')) {
       const ciiPanel = new CIIPanel();
@@ -1466,64 +1546,66 @@ export class PanelLayoutManager implements AppModule {
     });
     panelsGrid.appendChild(addPanelBlock);
 
-    // Always create Pro and MCP add-panel blocks — show/hide reactively via auth state.
-    const proBlock = document.createElement('button');
-    proBlock.className = 'add-panel-block ai-widget-block ai-widget-block-pro';
-    proBlock.setAttribute('aria-label', t('widgets.createInteractive'));
-    const proIcon = document.createElement('span');
-    proIcon.className = 'add-panel-block-icon';
-    proIcon.textContent = '\u26a1';
-    const proLabel = document.createElement('span');
-    proLabel.className = 'add-panel-block-label';
-    proLabel.textContent = t('widgets.createInteractive');
-    const proBadge = document.createElement('span');
-    proBadge.className = 'widget-pro-badge';
-    proBadge.textContent = t('widgets.proBadge');
-    proBlock.appendChild(proIcon);
-    proBlock.appendChild(proLabel);
-    proBlock.appendChild(proBadge);
-    proBlock.addEventListener('click', () => {
-      openWidgetChatModal({
-        mode: 'create',
-        tier: 'pro',
-        onComplete: (spec) => this.addCustomWidget(spec),
+    if (!DEMO_ACCESS_POLICY.suppressCommerceUx) {
+      // Always create Pro and MCP add-panel blocks — show/hide reactively via auth state.
+      const proBlock = document.createElement('button');
+      proBlock.className = 'add-panel-block ai-widget-block ai-widget-block-pro';
+      proBlock.setAttribute('aria-label', t('widgets.createInteractive'));
+      const proIcon = document.createElement('span');
+      proIcon.className = 'add-panel-block-icon';
+      proIcon.textContent = '\u26a1';
+      const proLabel = document.createElement('span');
+      proLabel.className = 'add-panel-block-label';
+      proLabel.textContent = t('widgets.createInteractive');
+      const proBadge = document.createElement('span');
+      proBadge.className = 'widget-pro-badge';
+      proBadge.textContent = t('widgets.proBadge');
+      proBlock.appendChild(proIcon);
+      proBlock.appendChild(proLabel);
+      proBlock.appendChild(proBadge);
+      proBlock.addEventListener('click', () => {
+        openWidgetChatModal({
+          mode: 'create',
+          tier: 'pro',
+          onComplete: (spec) => this.addCustomWidget(spec),
+        });
       });
-    });
-    panelsGrid.appendChild(proBlock);
+      panelsGrid.appendChild(proBlock);
 
-    const mcpBlock = document.createElement('button');
-    mcpBlock.className = 'add-panel-block mcp-panel-block';
-    mcpBlock.setAttribute('aria-label', t('mcp.connectPanel'));
-    const mcpIcon = document.createElement('span');
-    mcpIcon.className = 'add-panel-block-icon';
-    mcpIcon.textContent = '\u26a1';
-    const mcpLabel = document.createElement('span');
-    mcpLabel.className = 'add-panel-block-label';
-    mcpLabel.textContent = t('mcp.connectPanel');
-    const mcpBadge = document.createElement('span');
-    mcpBadge.className = 'widget-pro-badge';
-    mcpBadge.textContent = t('widgets.proBadge');
-    mcpBlock.appendChild(mcpIcon);
-    mcpBlock.appendChild(mcpLabel);
-    mcpBlock.appendChild(mcpBadge);
-    mcpBlock.addEventListener('click', () => {
-      openMcpConnectModal({
-        onComplete: (spec) => this.addMcpPanel(spec),
+      const mcpBlock = document.createElement('button');
+      mcpBlock.className = 'add-panel-block mcp-panel-block';
+      mcpBlock.setAttribute('aria-label', t('mcp.connectPanel'));
+      const mcpIcon = document.createElement('span');
+      mcpIcon.className = 'add-panel-block-icon';
+      mcpIcon.textContent = '\u26a1';
+      const mcpLabel = document.createElement('span');
+      mcpLabel.className = 'add-panel-block-label';
+      mcpLabel.textContent = t('mcp.connectPanel');
+      const mcpBadge = document.createElement('span');
+      mcpBadge.className = 'widget-pro-badge';
+      mcpBadge.textContent = t('widgets.proBadge');
+      mcpBlock.appendChild(mcpIcon);
+      mcpBlock.appendChild(mcpLabel);
+      mcpBlock.appendChild(mcpBadge);
+      mcpBlock.addEventListener('click', () => {
+        openMcpConnectModal({
+          onComplete: (spec) => this.addMcpPanel(spec),
+        });
       });
-    });
-    panelsGrid.appendChild(mcpBlock);
+      panelsGrid.appendChild(mcpBlock);
 
-    // Reactively show/hide Pro-only UI blocks based on auth state
-    const proBlocks = [proBlock, mcpBlock];
-    const applyProBlockGating = (isPro: boolean) => {
-      for (const block of proBlocks) {
-        block.style.display = isPro ? '' : 'none';
-      }
-    };
-    applyProBlockGating(hasPremiumAccess(getAuthState()));
-    this.proBlockUnsubscribe = subscribeAuthState((state) => {
-      applyProBlockGating(hasPremiumAccess(state));
-    });
+      // Reactively show/hide Pro-only UI blocks based on auth state
+      const proBlocks = [proBlock, mcpBlock];
+      const applyProBlockGating = (isPro: boolean) => {
+        for (const block of proBlocks) {
+          block.style.display = isPro ? '' : 'none';
+        }
+      };
+      applyProBlockGating(hasPremiumAccess(getAuthState()));
+      this.proBlockUnsubscribe = subscribeAuthState((state) => {
+        applyProBlockGating(hasPremiumAccess(state));
+      });
+    }
 
     const bottomGrid = document.getElementById('mapBottomGrid');
     if (bottomGrid) {
@@ -1910,7 +1992,7 @@ export class PanelLayoutManager implements AppModule {
     if (!this.shouldCreatePanel(key)) return;
     loader().then(async (panel) => {
       this.ctx.panels[key] = panel as unknown as import('@/components/Panel').Panel;
-      if (lockedFeatures) {
+      if (lockedFeatures && !DEMO_ACCESS_POLICY.ungateDemoDashboardUx) {
         (panel as unknown as import('@/components/Panel').Panel).showLocked(lockedFeatures);
       } else {
         // Re-apply auth gating for panels that loaded after the initial auth state fire

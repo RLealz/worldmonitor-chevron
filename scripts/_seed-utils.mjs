@@ -97,12 +97,18 @@ export function loadEnvFile(metaUrl) {
   const __dirname = metaUrl ? dirname(fileURLToPath(metaUrl)) : process.cwd();
   const candidates = [
     join(__dirname, '..', '.env.local'),
+    join(__dirname, '..', '.env'),
     join(__dirname, '..', '..', '.env.local'),
+    join(__dirname, '..', '..', '.env'),
   ];
   if (process.env.HOME) {
     candidates.push(join(process.env.HOME, 'Documents/GitHub/worldmonitor', '.env.local'));
+    candidates.push(join(process.env.HOME, 'Documents/GitHub/worldmonitor', '.env'));
   }
+  const seen = new Set();
   for (const envPath of candidates) {
+    if (seen.has(envPath)) continue;
+    seen.add(envPath);
     if (!existsSync(envPath)) continue;
     const lines = readFileSync(envPath, 'utf8').split('\n');
     for (const line of lines) {
@@ -117,7 +123,6 @@ export function loadEnvFile(metaUrl) {
       }
       if (!process.env[key]) process.env[key] = val;
     }
-    return;
   }
 }
 

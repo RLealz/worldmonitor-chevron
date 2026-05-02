@@ -3,6 +3,8 @@ import { FEEDS, INTEL_SOURCES, SOURCE_REGION_MAP } from '@/config/feeds';
 import { PANEL_CATEGORY_MAP, ALL_PANELS, VARIANT_DEFAULTS, getEffectivePanelConfig, isPanelEntitled, FREE_MAX_PANELS } from '@/config/panels';
 import { isProUser } from '@/services/widget-store';
 import { SITE_VARIANT } from '@/config/variant';
+import { DEMO_ACCESS_POLICY } from '@/config/demo-access-policy';
+import { DEMO_BRANDING } from '@/config/demo-branding';
 import { t } from '@/services/i18n';
 import type { MapProvider } from '@/config/basemap';
 import { escapeHtml } from '@/utils/sanitize';
@@ -79,7 +81,7 @@ export class UnifiedSettings {
     this.overlay.className = 'modal-overlay';
     this.overlay.id = 'unifiedSettingsModal';
     this.overlay.setAttribute('role', 'dialog');
-    this.overlay.setAttribute('aria-label', t('header.settings'));
+    this.overlay.setAttribute('aria-label', DEMO_BRANDING.isStandaloneDemo ? `${DEMO_BRANDING.shortName} Settings` : t('header.settings'));
 
     this.resetPanelDraft();
 
@@ -346,6 +348,10 @@ export class UnifiedSettings {
   }
 
   private render(): void {
+    if (DEMO_ACCESS_POLICY.suppressCommerceUx && (this.activeTab === 'api-keys' || this.activeTab === 'notifications')) {
+      this.activeTab = 'settings';
+    }
+
     this.prefsCleanup?.();
     this.prefsCleanup = null;
     this.notifCleanup?.();
@@ -353,13 +359,15 @@ export class UnifiedSettings {
     this.pendingNotifs = null;
 
     const tabClass = (id: TabId) => `unified-settings-tab${this.activeTab === id ? ' active' : ''}`;
-    const isSignedIn = !this.config.isDesktopApp && (getAuthState().user !== null);
+    const isSignedIn = !DEMO_ACCESS_POLICY.suppressUserAccountUx && !this.config.isDesktopApp && (getAuthState().user !== null);
     const prefs = renderPreferences({
       isDesktopApp: this.config.isDesktopApp,
       onMapProviderChange: this.config.onMapProviderChange,
       isSignedIn,
     });
-    const showNotificationsTab = !this.config.isDesktopApp;
+    const showNotificationsTab = !DEMO_ACCESS_POLICY.suppressUserAccountUx && !this.config.isDesktopApp;
+    const showApiKeysTab = !DEMO_ACCESS_POLICY.suppressCommerceUx;
+    const settingsTitle = DEMO_BRANDING.isStandaloneDemo ? `${DEMO_BRANDING.shortName} Settings` : t('header.settings');
     const notifs = showNotificationsTab
       ? renderNotificationsSettings({ isSignedIn })
       : null;
@@ -367,7 +375,7 @@ export class UnifiedSettings {
     this.overlay.innerHTML = `
       <div class="modal unified-settings-modal">
         <div class="modal-header">
-          <span class="modal-title">${t('header.settings')}</span>
+          <span class="modal-title">${escapeHtml(settingsTitle)}</span>
           <button class="modal-close unified-settings-close" aria-label="Close">\u00d7</button>
         </div>
         <div class="unified-settings-tabs" role="tablist" aria-label="Settings">
@@ -375,7 +383,7 @@ export class UnifiedSettings {
           <button class="${tabClass('panels')}" data-tab="panels" role="tab" aria-selected="${this.activeTab === 'panels'}" id="us-tab-panels" aria-controls="us-tab-panel-panels">${t('header.tabPanels')}</button>
           <button class="${tabClass('sources')}" data-tab="sources" role="tab" aria-selected="${this.activeTab === 'sources'}" id="us-tab-sources" aria-controls="us-tab-panel-sources">${t('header.tabSources')}</button>
           ${showNotificationsTab ? `<button class="${tabClass('notifications')}" data-tab="notifications" role="tab" aria-selected="${this.activeTab === 'notifications'}" id="us-tab-notifications" aria-controls="us-tab-panel-notifications">${t('header.tabNotifications')}</button>` : ''}
-          <button class="${tabClass('api-keys')}" data-tab="api-keys" role="tab" aria-selected="${this.activeTab === 'api-keys'}" id="us-tab-api-keys" aria-controls="us-tab-panel-api-keys">API Keys <span class="panel-pro-badge">PRO</span></button>
+          ${showApiKeysTab ? `<button class="${tabClass('api-keys')}" data-tab="api-keys" role="tab" aria-selected="${this.activeTab === 'api-keys'}" id="us-tab-api-keys" aria-controls="us-tab-panel-api-keys">API Keys <span class="panel-pro-badge">PRO</span></button>` : ''}
         </div>
         <div class="unified-settings-tab-panel${this.activeTab === 'settings' ? ' active' : ''}" data-panel-id="settings" id="us-tab-panel-settings" role="tabpanel" aria-labelledby="us-tab-settings">
           ${prefs.html}
@@ -414,9 +422,9 @@ export class UnifiedSettings {
           ${notifs.html}
         </div>
         ` : ''}
-        <div class="unified-settings-tab-panel${this.activeTab === 'api-keys' ? ' active' : ''}" data-panel-id="api-keys" id="us-tab-panel-api-keys" role="tabpanel" aria-labelledby="us-tab-api-keys">
+        ${showApiKeysTab ? `<div class="unified-settings-tab-panel${this.activeTab === 'api-keys' ? ' active' : ''}" data-panel-id="api-keys" id="us-tab-panel-api-keys" role="tabpanel" aria-labelledby="us-tab-api-keys">
           ${this.renderApiKeysContent()}
-        </div>
+        </div>` : ''}
       </div>
     `;
 
@@ -446,12 +454,15 @@ export class UnifiedSettings {
     this.updateSourcesCounter();
 
     this.attachApiKeysHandlers();
-    if (this.activeTab === 'api-keys' && getAuthState().user && hasFeature('apiAccess')) {
+    if (showApiKeysTab && this.activeTab === 'api-keys' && getAuthState().user && hasFeature('apiAccess')) {
       void this.loadApiKeys();
     }
   }
 
   private switchTab(tab: TabId): void {
+    if (DEMO_ACCESS_POLICY.suppressCommerceUx && tab === 'api-keys') return;
+    if (DEMO_ACCESS_POLICY.suppressUserAccountUx && tab === 'notifications') return;
+
     this.activeTab = tab;
 
     this.overlay.querySelectorAll('.unified-settings-tab').forEach(el => {
@@ -482,6 +493,8 @@ export class UnifiedSettings {
   }
 
   private renderUpgradeSection(): string {
+    if (DEMO_ACCESS_POLICY.suppressCommerceUx) return '';
+
     // Non-Dodo premium (API key / tester key / Clerk pro role without a
     // Convex subscription): neither "Upgrade" nor "Manage Billing" is
     // actionable. Checked FIRST so these users don't get stuck on the
@@ -655,7 +668,7 @@ export class UnifiedSettings {
     if (!container) return;
 
     const savedSettings = this.config.getPanelSettings();
-    const pro = isProUser();
+    const pro = DEMO_ACCESS_POLICY.ungateDemoDashboardUx || isProUser();
     const entries = this.getVisiblePanelEntries();
     container.innerHTML = entries.map(([key, panel]) => {
       const entitled = isPanelEntitled(key, ALL_PANELS[key] ?? panel, pro);
@@ -666,7 +679,7 @@ export class UnifiedSettings {
         <div class="panel-toggle-item ${panel.enabled && !locked ? 'active' : ''}${changed ? ' changed' : ''}${locked ? ' pro-locked' : ''}" data-panel="${escapeHtml(key)}" aria-pressed="${panel.enabled && !locked}" ${locked ? 'data-pro-locked="1"' : ''}>
           <div class="panel-toggle-checkbox">${panel.enabled && !locked ? '\u2713' : ''}${locked ? '\uD83D\uDD12' : ''}</div>
           <span class="panel-toggle-label">${escapeHtml(displayName)}</span>
-          ${(locked || (ALL_PANELS[key] ?? panel).premium) ? '<span class="panel-toggle-pro-badge">PRO</span>' : ''}
+          ${!DEMO_ACCESS_POLICY.ungateDemoDashboardUx && (locked || (ALL_PANELS[key] ?? panel).premium) ? '<span class="panel-toggle-pro-badge">PRO</span>' : ''}
         </div>
       `;
     }).join('');
@@ -675,6 +688,16 @@ export class UnifiedSettings {
   }
 
   private clonePanelSettings(source: Record<string, PanelConfig> = this.config.getPanelSettings()): Record<string, PanelConfig> {
+    if (DEMO_ACCESS_POLICY.ungateDemoDashboardUx) {
+      const variantDefaults = new Set(VARIANT_DEFAULTS[SITE_VARIANT] ?? []);
+      return Object.fromEntries(
+        [...variantDefaults].map((key) => [
+          key,
+          { ...getEffectivePanelConfig(key, SITE_VARIANT), enabled: true },
+        ]),
+      );
+    }
+
     const cloned: Record<string, PanelConfig> = Object.fromEntries(
       Object.entries(source).map(([key, panel]) => [key, { ...panel }]),
     );
@@ -700,8 +723,8 @@ export class UnifiedSettings {
   private toggleDraftPanel(key: string): void {
     const panel = this.draftPanelSettings[key];
     if (!panel) return;
-    if (!panel.enabled && !isPanelEntitled(key, ALL_PANELS[key] ?? panel, isProUser())) return;
-    if (!panel.enabled && !isProUser()) {
+    if (!panel.enabled && !DEMO_ACCESS_POLICY.ungateDemoDashboardUx && !isPanelEntitled(key, ALL_PANELS[key] ?? panel, isProUser())) return;
+    if (!panel.enabled && !DEMO_ACCESS_POLICY.ungateDemoDashboardUx && !isProUser()) {
       const enabledCount = Object.entries(this.draftPanelSettings).filter(([k, p]) => p.enabled && !k.startsWith('cw-')).length;
       if (enabledCount >= FREE_MAX_PANELS) {
         showToast(t('modals.settingsWindow.freePanelLimit', { max: String(FREE_MAX_PANELS) }));
@@ -875,6 +898,8 @@ export class UnifiedSettings {
   }
 
   private renderApiKeysContent(): string {
+    if (DEMO_ACCESS_POLICY.suppressCommerceUx) return '';
+
     const authState = getAuthState();
 
     if (!authState.user) {

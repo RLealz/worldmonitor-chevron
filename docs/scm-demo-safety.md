@@ -1,10 +1,10 @@
-# SCM Demo Safety Notes
+# Chevron SCM Demo Safety Notes
 
-WorldMonitor includes an `scm` variant for public-data supply chain operational intelligence demos. The Chevron framing used in planning and demos is contextual only: the implementation is reusable as a generic energy SCM dashboard and does not imply access to Chevron-private systems.
+Chevron SCM Demo Dashboard is a public-data supply chain operational intelligence demo built on the existing dashboard architecture. The Chevron framing used in planning and demos is contextual only: the implementation is reusable as a generic energy SCM dashboard and does not imply access to Chevron-private systems.
 
 ## Public Data Posture
 
-The SCM variant uses only open-source or public-facing signals already available through WorldMonitor surfaces, generated public API specs, public market context, and synthetic/demo fixtures. Fixture records must use one of these approved postures:
+The Chevron SCM demo uses only open-source or public-facing signals already available through dashboard surfaces, generated public API specs, public market context, and synthetic/demo fixtures. Fixture records must use one of these approved postures:
 
 - `synthetic_archetype`
 - `public_signal_summary`

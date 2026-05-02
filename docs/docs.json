@@ -207,7 +207,8 @@
               "cors",
               "health-endpoints",
               "relay-parameters",
-              "data-sources"
+              "data-sources",
+              "scm-api-data-index"
             ]
           },
           {

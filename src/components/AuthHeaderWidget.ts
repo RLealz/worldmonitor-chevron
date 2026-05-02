@@ -1,5 +1,6 @@
 import { subscribeAuthState, type AuthSession } from '@/services/auth-state';
 import { mountUserButton, openSignIn, openSignUp } from '@/services/clerk';
+import { DEMO_ACCESS_POLICY } from '@/config/demo-access-policy';
 import { t } from '@/services/i18n';
 
 export class AuthHeaderWidget {
@@ -41,6 +42,8 @@ export class AuthHeaderWidget {
     this.unmountUserButton?.();
     this.unmountUserButton = null;
     this.container.innerHTML = '';
+
+    if (DEMO_ACCESS_POLICY.suppressUserAccountUx) return;
 
     if (!state.user) {
       this.renderSignedOut();

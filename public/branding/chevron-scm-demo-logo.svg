@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="64" viewBox="0 0 220 64" role="img" aria-labelledby="title desc">
+  <title id="title">Chevron SCM Demo Dashboard logo</title>
+  <desc id="desc">A compact public-data supply chain intelligence demo mark.</desc>
+  <rect width="220" height="64" rx="8" fill="#0b1117"/>
+  <path d="M18 42h42l15-20h42" fill="none" stroke="#31c48d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="18" cy="42" r="5" fill="#31c48d"/>
+  <circle cx="75" cy="22" r="5" fill="#2f80ed"/>
+  <circle cx="117" cy="22" r="5" fill="#f4c542"/>
+  <text x="138" y="27" fill="#f5f7fb" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700">SCM</text>
+  <text x="138" y="45" fill="#9aa7b3" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="700" letter-spacing="1">PUBLIC DATA DEMO</text>
+</svg>

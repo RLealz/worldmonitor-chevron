@@ -185,6 +185,7 @@ function sebufApiPlugin(): Plugin {
       conflictServerMod, conflictHandlerMod,
       maritimeServerMod, maritimeHandlerMod,
       cyberServerMod, cyberHandlerMod,
+      sanctionsServerMod, sanctionsHandlerMod,
       economicServerMod, economicHandlerMod,
       infrastructureServerMod, infrastructureHandlerMod,
       marketServerMod, marketHandlerMod,
@@ -226,6 +227,8 @@ function sebufApiPlugin(): Plugin {
         import('./server/worldmonitor/maritime/v1/handler'),
         import('./src/generated/server/worldmonitor/cyber/v1/service_server'),
         import('./server/worldmonitor/cyber/v1/handler'),
+        import('./src/generated/server/worldmonitor/sanctions/v1/service_server'),
+        import('./server/worldmonitor/sanctions/v1/handler'),
         import('./src/generated/server/worldmonitor/economic/v1/service_server'),
         import('./server/worldmonitor/economic/v1/handler'),
         import('./src/generated/server/worldmonitor/infrastructure/v1/service_server'),
@@ -271,6 +274,7 @@ function sebufApiPlugin(): Plugin {
       ...conflictServerMod.createConflictServiceRoutes(conflictHandlerMod.conflictHandler, serverOptions),
       ...maritimeServerMod.createMaritimeServiceRoutes(maritimeHandlerMod.maritimeHandler, serverOptions),
       ...cyberServerMod.createCyberServiceRoutes(cyberHandlerMod.cyberHandler, serverOptions),
+      ...sanctionsServerMod.createSanctionsServiceRoutes(sanctionsHandlerMod.sanctionsHandler, serverOptions),
       ...economicServerMod.createEconomicServiceRoutes(economicHandlerMod.economicHandler, serverOptions),
       ...infrastructureServerMod.createInfrastructureServiceRoutes(infrastructureHandlerMod.infrastructureHandler, serverOptions),
       ...marketServerMod.createMarketServiceRoutes(marketHandlerMod.marketHandler, serverOptions),
@@ -298,6 +302,37 @@ function sebufApiPlugin(): Plugin {
       server.watcher.on('change', (file) => {
         if (file.includes('/server/') || file.includes('/src/generated/server/')) {
           cachedRouter = null;
+        }
+      });
+
+      server.middlewares.use(async (req, res, next) => {
+        if (!req.url?.startsWith('/api/bootstrap')) return next();
+
+        try {
+          const port = server.config.server.port || 3000;
+          const url = new URL(req.url, `http://localhost:${port}`);
+          const headers: Record<string, string> = {};
+          for (const [key, value] of Object.entries(req.headers)) {
+            if (typeof value === 'string') {
+              headers[key] = value;
+            } else if (Array.isArray(value)) {
+              headers[key] = value.join(', ');
+            }
+          }
+
+          const bootstrapMod = await import('./api/bootstrap.js');
+          const response = await bootstrapMod.default(new Request(url.toString(), {
+            method: req.method || 'GET',
+            headers,
+          }));
+
+          res.statusCode = response.status;
+          response.headers.forEach((value: string, key: string) => {
+            res.setHeader(key, value);
+          });
+          res.end(Buffer.from(await response.arrayBuffer()));
+        } catch (err) {
+          next(err);
         }
       });
 

@@ -1,4 +1,5 @@
 import type { AuthSession } from './auth-state';
+import { DEMO_ACCESS_POLICY } from '@/config/demo-access-policy';
 import { getSecretState } from './runtime-config';
 import { isProUser } from './widget-store';
 
@@ -27,6 +28,7 @@ export enum PanelGateReason {
  * signals that aren't already covered by isProUser.
  */
 export function hasPremiumAccess(authState?: AuthSession): boolean {
+  if (DEMO_ACCESS_POLICY.ungateDemoDashboardUx) return true;
   if (getSecretState('WORLDMONITOR_API_KEY').present) return true;
   if (isProUser()) return true;
   if (authState?.user?.role === 'pro') return true;

@@ -6,6 +6,17 @@
 
 export { SITE_VARIANT } from './variant';
 
+export {
+  CHEVRON_DEMO_VIEW_STORAGE_KEY,
+  CHEVRON_DEMO_VIEWS,
+  getChevronDemoView,
+  getInitialChevronDemoView,
+  isChevronDemoViewId,
+  persistChevronDemoView,
+  type ChevronDemoView,
+  type ChevronDemoViewId,
+} from './chevron-demo-views';
+
 // Shared base configuration (always included)
 export {
   IDLE_PAUSE_MS,
