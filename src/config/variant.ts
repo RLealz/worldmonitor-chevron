@@ -20,14 +20,16 @@ function isSupportedVariant(value: string | null): value is string {
   return value !== null && SUPPORTED_VARIANTS.has(value);
 }
 
+const resolvedBuildVariant = isSupportedVariant(buildVariant) ? buildVariant : 'full';
+
 export const SITE_VARIANT: string = (() => {
-  if (typeof window === 'undefined') return buildVariant;
+  if (typeof window === 'undefined') return resolvedBuildVariant;
 
   const isTauri = '__TAURI_INTERNALS__' in window || '__TAURI__' in window;
   if (isTauri) {
     const stored = localStorage.getItem('worldmonitor-variant');
     if (isSupportedVariant(stored)) return stored;
-    return buildVariant;
+    return resolvedBuildVariant;
   }
 
   const h = location.hostname;
@@ -41,8 +43,8 @@ export const SITE_VARIANT: string = (() => {
   if (h === 'localhost' || h === '127.0.0.1') {
     const stored = localStorage.getItem('worldmonitor-variant');
     if (isSupportedVariant(stored)) return stored;
-    return buildVariant;
+    return resolvedBuildVariant;
   }
 
-  return 'full';
+  return resolvedBuildVariant;
 })();

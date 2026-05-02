@@ -106,6 +106,8 @@ describe('SCM variant config guardrails', () => {
     assert.match(variantSource, /const stored = localStorage\.getItem\('worldmonitor-variant'\);/, 'stored local variant path must exist');
     assert.match(variantSource, /if \(h\.startsWith\('scm\.'\)\) return 'scm';/, 'hostname routing must recognize scm subdomains');
     assert.match(variantSource, /if \(h === 'localhost' \|\| h === '127\.0\.0\.1'\)/, 'localhost routing must preserve scm selection');
+    assert.match(variantSource, /const resolvedBuildVariant = isSupportedVariant\(buildVariant\) \? buildVariant : 'full';/, 'deployed Vercel/custom hosts must use a validated build variant fallback');
+    assert.match(variantSource, /return resolvedBuildVariant;\s*\}\)\(\);/, 'non-mapped hostnames must not force the full variant when VITE_VARIANT=scm is set at build time');
   });
 
   it('frames SCM metadata as public-data, open-source, and demo-safe', () => {
